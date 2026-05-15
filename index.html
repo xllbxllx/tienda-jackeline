@@ -6,17 +6,29 @@
     <title>Tienda Jackeline Pro - Ignition System</title>
     <style>
         :root { --primary: #2ecc71; --dark: #2c3e50; --danger: #e74c3c; --info: #3498db; --gray: #95a5a6; --transfer: #9b59b6; --warning: #f1c40f; --gold: #f39c12; }
-        
         * { box-sizing: border-box; }
-
         body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
         .pantalla-principal { display: flex; gap: 15px; height: 100%; max-width: 1400px; margin: auto; width: 100%; }
-
         .col-izq { flex: 2; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; }
         .col-der { flex: 0.8; background: #fff; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; border: 2px solid var(--info); }
 
-        .header { background: var(--primary); color: white; padding: 12px; text-align: center; border-bottom: 4px solid #27ae60; position: relative; flex-shrink: 0; }
-        
+        /* HEADER RESPONSIVE CORREGIDO */
+        .header { 
+            background: var(--primary); color: white; padding: 10px 15px; border-bottom: 4px solid #27ae60; 
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; flex-shrink: 0; 
+        }
+        .header-titulo { font-weight: bold; font-size: 1.1rem; flex-grow: 1; text-align: center; order: 2; min-width: 150px; }
+        .header-btns-izq { display: flex; gap: 12px; order: 1; }
+        .header-btns-der { display: flex; order: 3; }
+        .btn-head { background: none; border: none; color: white; cursor: pointer; font-size: 1.3rem; padding: 2px; }
+
+        @media (max-width: 500px) {
+            .header-titulo { width: 100%; order: 3; font-size: 1rem; margin-top: 5px; }
+            .header-btns-izq { order: 1; gap: 15px; }
+            .header-btns-der { order: 2; }
+        }
+
         .dashboard { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 10px; background: #fff; border-bottom: 1px solid #eee; flex-shrink: 0; }
         .stat-card { padding: 8px; border-radius: 12px; text-align: center; color: white; font-size: 0.8rem; }
         .bg-efe { background: #27ae60; } .bg-tra { background: var(--transfer); } .bg-bodega { background: var(--dark); }
@@ -45,6 +57,7 @@
 
         .fijo-inferior { background: #fdfdfd; border-top: 1px solid #eee; padding: 10px; flex-shrink: 0; }
         .form-registro { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+        .btn-icon { background: none; border: none; font-size: 1.1rem; cursor: pointer; padding: 5px; }
 
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
         .modal-ign { background: white; width: 95%; max-width: 400px; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
@@ -53,6 +66,7 @@
         .btn-m { flex: 1; padding: 15px; border: none; background: none; cursor: pointer; font-weight: bold; font-size: 1rem; }
         .btn-m-ok { color: var(--primary); border-left: 1px solid #eee; }
         
+        /* RESTAURADO: DISEÑO DEL HISTORIAL */
         .ticket-hist { background: #fffdf5; border: 1px solid #f9e79f; border-radius: 12px; padding: 12px; margin-bottom: 10px; text-align: left; }
         .cierre-card { background: #f8f9fa; border-left: 5px solid var(--dark); padding: 10px; margin-bottom: 10px; text-align: left; border-radius: 8px; border: 1px solid #eee; }
 
@@ -63,6 +77,7 @@
             .area-lista, .items-bolsa { height: 350px; }
         }
 
+        /* RESTAURADO: DISEÑO DEL REPORTE PDF PRO */
         @media print {
             body { background: white !important; overflow: visible !important; }
             .pantalla-principal, .overlay { display: none !important; }
@@ -95,12 +110,14 @@
 <div class="pantalla-principal">
     <div class="col-izq">
         <div class="header">
-            <strong>🏪 TIENDA JACKELINE</strong>
-            <button onclick="verTodoHistorial()" title="Historial" style="position:absolute; right:12px; top:10px; background:none; border:none; color:white; cursor:pointer; font-size:1.3rem;">🕒</button>
-            <div style="position:absolute; left:12px; top:10px; display:flex; gap:12px;">
-                <button onclick="exportarDatos()" title="Guardar Backup" style="background:none; border:none; color:white; cursor:pointer; font-size:1.3rem;">💾</button>
-                <button onclick="document.getElementById('importFile').click()" title="Cargar Backup" style="background:none; border:none; color:white; cursor:pointer; font-size:1.3rem;">📁</button>
-                <button onclick="verHistorialCierres()" title="Bitácora" style="background:none; border:none; color:white; cursor:pointer; font-size:1.3rem;">📈</button>
+            <div class="header-btns-izq">
+                <button onclick="exportarDatos()" class="btn-head" title="Guardar Backup">💾</button>
+                <button onclick="document.getElementById('importFile').click()" class="btn-head" title="Cargar Backup">📁</button>
+                <button onclick="verHistorialCierres()" class="btn-head" title="Bitácora de Cierres">📈</button>
+            </div>
+            <div class="header-titulo">🏪 TIENDA JACKELINE</div>
+            <div class="header-btns-der">
+                <button onclick="verTodoHistorial()" class="btn-head" title="Historial de Hoy">🕒</button>
             </div>
         </div>
         <div class="dashboard">
@@ -181,6 +198,7 @@
         localStorage.setItem("ign_e", efe); localStorage.setItem("ign_t", tra);
         localStorage.setItem("ign_tk", JSON.stringify(tickets));
         localStorage.setItem("ign_hist_cierres", JSON.stringify(cierresHistorial));
+        
         const list = document.getElementById('lista'); list.innerHTML = "";
         let bodVal = 0;
         prods.forEach(p => {
@@ -227,13 +245,16 @@
         document.getElementById('pdfEfe').innerText = moneda(efe);
         document.getElementById('pdfTra').innerText = moneda(tra);
         document.getElementById('pdfTotal').innerText = moneda(efe + tra);
+        
         const resumenVentas = {};
         tickets.forEach(tk => {
             tk.items.forEach(item => {
-                if(!resumenVentas[item.n]) resumenVentas[item.n] = { cant: 0, total: 0 };
-                resumenVentas[item.n].cant += item.c;
-                const pRef = prods.find(x => x.nombre === item.n);
-                resumenVentas[item.n].total += (item.c * (pRef ? pRef.precio : 0));
+                let n = item.n;
+                let c = item.cant || item.c || 0; 
+                if(!resumenVentas[n]) resumenVentas[n] = { cant: 0, total: 0 };
+                resumenVentas[n].cant += c;
+                const pRef = prods.find(x => x.nombre === n);
+                resumenVentas[n].total += (c * (pRef ? pRef.precio : 0));
             });
         });
         const rankingSorted = Object.entries(resumenVentas).sort((a,b) => b[1].cant - a[1].cant);
@@ -241,13 +262,14 @@
         document.getElementById('pdfCuerpoVentas').innerHTML = Object.entries(resumenVentas).map(([n, d]) => `<tr><td>${n}</td><td>${d.cant} unidades.</td><td>${moneda(d.total)}</td></tr>`).join('');
         const alertas = prods.filter(p => p.cantidad < 5 && !p.oculto);
         document.getElementById('pdfCuerpoAlertas').innerHTML = alertas.length > 0 ? alertas.map(p => `<tr><td>${p.nombre}</td><td>${p.cantidad} unidades.</td><td style="color:red; font-weight:bold;">${p.cantidad === 0 ? 'AGOTADO' : 'STOCK BAJO'}</td></tr>`).join('') : '<tr><td colspan="3" style="text-align:center;">Inventario OK.</td></tr>';
-        window.print();
+        
+        setTimeout(() => { window.print(); }, 300);
     }
 
     function exportarDatos() {
         const data = { prods, efe, tra, tickets, cierresHistorial };
         const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Backup_${new Date().toLocaleDateString().replace(/\//g, '-')}.json`; a.click();
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Backup_Jackeline_${new Date().toLocaleDateString().replace(/\//g, '-')}.json`; a.click();
     }
 
     function procesarImportacion(event) {
@@ -257,7 +279,7 @@
             try {
                 const data = JSON.parse(e.target.result);
                 if (data.prods) { prods = data.prods; efe = data.efe || 0; tra = data.tra || 0; tickets = data.tickets || []; cierresHistorial = data.cierresHistorial || []; refrescar(); }
-            } catch (err) { alert("Error de archivo."); }
+            } catch (err) { alert("Error al cargar el archivo de respaldo."); }
         }; reader.readAsText(file);
     }
 
@@ -273,15 +295,16 @@
     function confirmarVentaBolsa() {
         let total = 0; let resumen = carrito.map(i => `• ${i.n} (x${i.cant})`).join('<br>');
         carrito.forEach(i => total += (i.p * i.cant));
-        showIgnition("Confirmar Venta", `Total: ${moneda(total)}<br>${resumen}`, ``, modalFinalizar);
+        showIgnition("Confirmar Venta", `Total a cobrar: ${moneda(total)}<br><br>${resumen}`, ``, modalFinalizar);
     }
 
     function modalFinalizar() {
         let total = 0; carrito.forEach(i => total += (i.p * i.cant));
-        showIgnition("Método de Pago", `Total: ${moneda(total)}`, `<select id="vPago" style="width:100%; padding:15px;"><option value="E">💵 Efectivo</option><option value="T">📲 Transferencia</option></select>`, () => {
+        showIgnition("Método de Pago", `Total: ${moneda(total)}`, `<select id="vPago" style="width:100%; padding:15px; font-size:1.1rem; border-radius:10px;"><option value="E">💵 Efectivo</option><option value="T">📲 Transferencia</option></select>`, () => {
             const m = document.getElementById('vPago').value;
+            const mTxt = m === "E" ? "Efec." : "Transf.";
             if (m === "E") efe += total; else tra += total;
-            tickets.push({ id: tickets.length + 1, h: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), tot: total, items: [...carrito] });
+            tickets.push({ id: tickets.length + 1, h: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), m: mTxt, tot: total, items: [...carrito] });
             carrito.forEach(item => { const p = prods.find(x => x.nombre === item.n); p.cantidad -= item.cant; if(p.cantidad <= 0) p.oculto = true; });
             carrito = []; refrescar(); return true;
         });
@@ -289,7 +312,7 @@
 
     function abrirVentaCant(n) {
         const p = prods.find(x => x.nombre === n);
-        showIgnition("Cantidad", `¿Cuántos "${n}"?`, `<input type="number" id="vCant" value="1" min="1" max="${p.cantidad}" style="width:100%; padding:10px; text-align:center">`, () => {
+        showIgnition("Añadir a Bolsa", `¿Cuántas unidades de "${n}"?`, `<input type="number" id="vCant" value="1" min="1" max="${p.cantidad}" style="width:100%; padding:15px; font-size:1.5rem; text-align:center; border-radius:10px;">`, () => {
             const cant = parseInt(document.getElementById('vCant').value);
             if (cant > 0 && cant <= p.cantidad) {
                 const yaEn = carrito.find(x => x.n === n);
@@ -301,10 +324,43 @@
 
     function refrescarCarritoUI() {
         const d = document.getElementById('itemsCarrito'); const b = document.getElementById('btnFinalizar'); const tX = document.getElementById('txtTotal');
-        if (carrito.length === 0) { d.innerHTML = "<p style='text-align:center; color:gray; margin-top:30px;'>Bolsa vacía.</p>"; b.disabled = true; tX.innerText = "$0"; return; }
+        if (carrito.length === 0) { d.innerHTML = "<p style='text-align:center; color:gray; margin-top:30px;'>Agregue productos...</p>"; b.disabled = true; tX.innerText = "$0"; return; }
         b.disabled = false; let t = 0;
-        d.innerHTML = carrito.map(i => { t += (i.p * i.cant); return `<div style="display:flex; justify-content:space-between"><span>${i.n} x${i.cant}</span><span>${moneda(i.p * i.cant)}</span></div>`; }).join('');
+        d.innerHTML = carrito.map(i => { t += (i.p * i.cant); return `<div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px dashed #eee; padding-bottom:5px;"><span>${i.n} <b>x${i.cant}</b></span><span>${moneda(i.p * i.cant)}</span></div>`; }).join('');
         tX.innerText = moneda(t);
+    }
+
+    /* RESTAURADO: HISTORIAL DE VENTAS DE HOY CON DETALLES */
+    function verTodoHistorial() {
+        const hHtml = tickets.length > 0 ? tickets.slice().reverse().map(tk => {
+            const metodo = tk.m || "N/A";
+            const itemsList = tk.items.map(i => `• ${i.n} (${i.cant || i.c})`).join('<br>');
+            return `<div class="ticket-hist">
+                <b>Venta #${tk.id} - ${tk.h} [${metodo}]</b><br>
+                ${itemsList}
+                <div style="text-align:right; font-weight:bold; color:var(--primary); margin-top:5px;">Total: ${moneda(tk.tot)}</div>
+            </div>`;
+        }).join('') : "No hay ventas registradas el día de hoy.";
+        showIgnition("Ventas de Hoy", null, hHtml, () => true);
+    }
+
+    function cambiarEstado(n, o) { const p = prods.find(x => x.nombre === n); if(p) { p.oculto = o; refrescar(); } }
+    
+    /* RESTAURADO: MODAL DE SURTIR CON INPUT DE CANTIDAD */
+    function modalSurtir(n) { 
+        showIgnition("Surtir Inventario", `¿Cuántas unidades de "${n}" ingresarán?`, `<input type="number" id="sC" value="10" style="width:100%; padding:15px; text-align:center; font-size:1.5rem; border-radius:10px;">`, () => { 
+            const p = prods.find(x => x.nombre === n); 
+            const unidades = parseInt(document.getElementById('sC').value);
+            if(unidades > 0) { p.cantidad = unidades; p.oculto = false; refrescar(); return true; } return false;
+        }); 
+    }
+    
+    /* RESTAURADO: MODAL DE EDITAR */
+    function modalEditar(n) { 
+        const p = prods.find(x => x.nombre === n); 
+        showIgnition("Editar Producto", `Modificando: ${n}`, `<input type="text" id="eN" value="${p.nombre}" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px;"><input type="number" id="eP" value="${p.precio}" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px;"><input type="number" id="eS" value="${p.cantidad}" style="width:100%; padding:10px; border-radius:8px;">`, () => { 
+            p.nombre = document.getElementById('eN').value.trim(); p.precio = parseInt(document.getElementById('eP').value); p.cantidad = parseInt(document.getElementById('eS').value); if(p.cantidad <= 0) p.oculto = true; refrescar(); return true; 
+        }); 
     }
 
     function showIgnition(tit, msg, html, cb) {
@@ -315,13 +371,7 @@
     }
     function closeAlert() { document.getElementById('ignModal').style.display = 'none'; }
     function vaciarCarrito() { carrito = []; refrescarCarritoUI(); }
-    function verTodoHistorial() {
-        const hHtml = tickets.length > 0 ? tickets.slice().reverse().map(tk => `<div class="ticket-hist"><b>Venta #${tk.id} - ${tk.h}</b><br>Total: ${moneda(tk.tot)}</div>`).join('') : "Vacío.";
-        showIgnition("Ventas hoy", null, hHtml, () => true);
-    }
-    function cambiarEstado(n, o) { const p = prods.find(x => x.nombre === n); if(p) { p.oculto = o; refrescar(); } }
-    function modalSurtir(n) { const p = prods.find(x => x.nombre === n); showIgnition("Surtir", null, `<input type="number" id="sC" value="10">`, () => { p.cantidad = parseInt(document.getElementById('sC').value); p.oculto = false; refrescar(); return true; }); }
-    function modalEditar(n) { const p = prods.find(x => x.nombre === n); showIgnition("Editar", null, `<input type="text" id="eN" value="${p.nombre}"><input type="number" id="eP" value="${p.precio}"><input type="number" id="eS" value="${p.cantidad}">`, () => { p.nombre = document.getElementById('eN').value; p.precio = parseInt(document.getElementById('eP').value); p.cantidad = parseInt(document.getElementById('eS').value); refrescar(); return true; }); }
+    
     document.getElementById('buscador').oninput = (e) => refrescar(e.target.value);
     refrescar();
 </script>
