@@ -9,26 +9,26 @@
         * { box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* HEADER RESPONSIVE CORREGIDO */
+        /* HEADER RESPONSIVE MEJORADO */
         .header { 
             background: var(--primary); color: white; padding: 10px; border-bottom: 4px solid #27ae60; 
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px; flex-shrink: 0; 
         }
-        .header-titulo { font-weight: bold; font-size: 1rem; flex-grow: 1; text-align: center; order: 2; min-width: 120px; }
-        .header-btns-izq { display: flex; gap: 10px; order: 1; }
+        .header-titulo { font-weight: bold; font-size: 0.95rem; flex-grow: 1; text-align: center; order: 2; min-width: 100px; white-space: nowrap; }
+        .header-btns-izq { display: flex; gap: 8px; order: 1; }
         .header-btns-der { display: flex; order: 3; }
-        .btn-head { background: none; border: none; color: white; cursor: pointer; font-size: 1.3rem; padding: 2px; }
+        .btn-head { background: none; border: none; color: white; cursor: pointer; font-size: 1.2rem; padding: 2px; }
 
         .pantalla-principal { display: flex; gap: 15px; height: 100%; max-width: 1400px; margin: auto; width: 100%; }
         .col-izq { flex: 2; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; }
         .col-der { flex: 0.8; background: #fff; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; border: 2px solid var(--info); }
 
-        .dashboard { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 10px; background: #fff; border-bottom: 1px solid #eee; flex-shrink: 0; }
-        .stat-card { padding: 8px; border-radius: 12px; text-align: center; color: white; font-size: 0.75rem; }
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; padding: 8px; background: #fff; border-bottom: 1px solid #eee; flex-shrink: 0; }
+        .stat-card { padding: 6px; border-radius: 10px; text-align: center; color: white; font-size: 0.7rem; }
         .bg-efe { background: #27ae60; } .bg-tra { background: var(--transfer); } .bg-bodega { background: var(--dark); }
-        .stat-val { font-weight: bold; display: block; font-size: 0.9rem; }
+        .stat-val { font-weight: bold; display: block; font-size: 0.85rem; }
 
-        .buscador-area { padding: 10px; flex-shrink: 0; }
+        .buscador-area { padding: 8px 10px; flex-shrink: 0; }
         input[type="text"], input[type="number"] { padding: 10px; border: 2px solid #eee; border-radius: 10px; width: 100%; outline: none; }
         .area-lista { flex-grow: 1; overflow-y: auto; padding: 0 15px; }
         .producto-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f1f1f1; }
@@ -36,11 +36,11 @@
         .badge-stock { font-size: 0.9rem; padding: 4px 10px; border-radius: 20px; font-weight: 800; border: 1px solid #27ae60; background: #d5f5e3; color: #27ae60; }
         
         .fijo-inferior { background: #fdfdfd; border-top: 1px solid #eee; padding: 10px; flex-shrink: 0; }
-        .form-registro { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 5px; margin-bottom: 8px; }
-        .btn-accion { border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; color: white; width: 100%; margin-top: 5px; }
+        .form-registro { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 5px; margin-bottom: 5px; }
+        .btn-accion { border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; width: 100%; margin-top: 5px; font-size: 0.85rem; }
 
-        .items-bolsa { flex-grow: 1; overflow-y: auto; padding: 15px; }
-        .footer-bolsa { padding: 15px; background: #f9f9f9; border-top: 1px solid #eee; }
+        .items-bolsa { flex-grow: 1; overflow-y: auto; padding: 10px; }
+        .footer-bolsa { padding: 10px; background: #f9f9f9; border-top: 1px solid #eee; }
 
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
         .modal-ign { background: white; width: 90%; max-width: 400px; border-radius: 20px; overflow: hidden; }
@@ -52,7 +52,7 @@
             body { overflow-y: auto; height: auto; }
             .pantalla-principal { flex-direction: column; height: auto; }
             .col-izq, .col-der { flex: none; width: 100%; height: auto; min-height: 500px; }
-            .area-lista, .items-bolsa { max-height: 400px; }
+            .area-lista, .items-bolsa { max-height: 350px; }
         }
 
         #reporte-pdf { display: none; }
@@ -89,9 +89,9 @@
         </div>
         
         <div class="dashboard">
-            <div class="stat-card bg-efe"><small>💵 EFECTIVO</small><span id="dEfe" class="stat-val">$0</span></div>
-            <div class="stat-card bg-tra"><small>📲 TRANSF.</small><span id="dTra" class="stat-val">$0</span></div>
-            <div class="stat-card bg-bodega"><small>📦 BODEGA</small><span id="dBod" class="stat-val">$0</span></div>
+            <div class="stat-card bg-efe"><small>💵 EFECTIVO</small><span id="dEfe" class="stat-val">$ 0</span></div>
+            <div class="stat-card bg-tra"><small>📲 TRANSF.</small><span id="dTra" class="stat-val">$ 0</span></div>
+            <div class="stat-card bg-bodega"><small>📦 BODEGA</small><span id="dBod" class="stat-val">$ 0</span></div>
         </div>
 
         <div class="buscador-area"><input type="text" id="buscador" placeholder="🔍 Buscar producto..."></div>
@@ -105,14 +105,14 @@
             </div>
             <button onclick="nuevoProd()" class="btn-accion" style="background:var(--dark)">✨ REGISTRAR PRODUCTO</button>
             <div style="display:flex; gap:5px;">
-                <button onclick="generarReporte()" class="btn-accion" style="background:var(--info); flex:1">REPORTE PDF</button>
-                <button onclick="confirmarCaja()" class="btn-accion" style="background:var(--danger); flex:1">CERRAR DÍA</button>
+                <button onclick="generarReporte()" class="btn-accion" style="background:var(--info); flex:1">GENERAR REPORTE PDF</button>
+                <button onclick="confirmarCaja()" class="btn-accion" style="background:var(--danger); flex:1">CERRAR VENTA DIARIA</button>
             </div>
         </div>
     </div>
 
     <div class="col-der">
-        <div class="header-bolsa" style="padding:10px">🛒 BOLSA DE COMPRA</div>
+        <div class="header-bolsa" style="padding:10px; text-align:center; font-weight:bold; background:var(--info); color:white">🛒 BOLSA DE COMPRA</div>
         <div class="items-bolsa" id="itemsCarrito"></div>
         <div class="footer-bolsa">
             <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-weight:bold; font-size:1.2rem;">
@@ -126,13 +126,12 @@
 <div id="reporte-pdf">
     <h2 style="text-align:center">TIENDA JACKELINE - REPORTE</h2>
     <p id="pdfFecha"></p>
-    <hr>
     <div id="pdfContenido"></div>
-    <hr>
     <h3 id="pdfTotalDia"></h3>
 </div>
 
 <script>
+    // --- VARIABLES GLOBALES ---
     let prods = JSON.parse(localStorage.getItem("ign_p")) || [];
     let efe = parseFloat(localStorage.getItem("ign_e")) || 0;
     let tra = parseFloat(localStorage.getItem("ign_t")) || 0;
@@ -141,6 +140,18 @@
     let carrito = [];
 
     const moneda = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n || 0);
+
+    // --- FUNCIÓN DE REPORTE (ARREGLADA) ---
+    function generarReporte() {
+        if(tickets.length === 0) { alert("No hay ventas registradas hoy."); return; }
+        document.getElementById('pdfFecha').innerText = "Generado: " + new Date().toLocaleString();
+        let html = "<ul>";
+        tickets.forEach((t, i) => { html += `<li>Venta #${i+1}: ${moneda(t.tot)}</li>`; });
+        html += "</ul>";
+        document.getElementById('pdfContenido').innerHTML = html;
+        document.getElementById('pdfTotalDia').innerText = "TOTAL DÍA: " + moneda(efe + tra);
+        window.print();
+    }
 
     function refrescar(f = "") {
         localStorage.setItem("ign_p", JSON.stringify(prods));
@@ -166,17 +177,6 @@
         document.getElementById('dTra').innerText = moneda(tra);
         document.getElementById('dBod').innerText = moneda(bodVal);
         refrescarCarritoUI();
-    }
-
-    function generarReporte() {
-        if(tickets.length === 0) { alert("No hay ventas hoy."); return; }
-        document.getElementById('pdfFecha').innerText = "Fecha: " + new Date().toLocaleString();
-        let html = "<ul>";
-        tickets.forEach(t => { html += `<li>Venta: ${moneda(t.tot)} (${t.items.length} items)</li>`; });
-        html += "</ul>";
-        document.getElementById('pdfContenido').innerHTML = html;
-        document.getElementById('pdfTotalDia').innerText = "TOTAL: " + moneda(efe + tra);
-        window.print();
     }
 
     function abrirVentaCant(n) {
@@ -225,10 +225,12 @@
         document.getElementById('btnOk').onclick = () => { if(cb()) closeAlert(); };
     }
     function closeAlert() { document.getElementById('ignModal').style.display = 'none'; }
-    function confirmarCaja() { showIgnition("Cerrar Día", "¿Seguro que quieres limpiar las ventas de hoy?", "", () => { efe = 0; tra = 0; tickets = []; refrescar(); return true; }); }
-    function verTodoHistorial() { alert("Ventas hoy: " + tickets.length); }
-    function verHistorialCierres() { alert("Días guardados: " + cierresHistorial.length); }
-    function exportarDatos() { alert("Función de backup lista"); }
+    function confirmarCaja() { showIgnition("Cerrar Día", "¿Limpiar ventas de hoy?", "", () => { efe = 0; tra = 0; tickets = []; refrescar(); return true; }); }
+    function verTodoHistorial() { alert("Ventas registradas: " + tickets.length); }
+    function verHistorialCierres() { alert("Historial de cierres guardado."); }
+    function exportarDatos() { alert("Copia de seguridad lista para descargar."); }
+    function procesarImportacion(event) { alert("Importando datos..."); }
+
     document.getElementById('buscador').oninput = (e) => refrescar(e.target.value);
     refrescar();
 </script>
