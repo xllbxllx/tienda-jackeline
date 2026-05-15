@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tienda Jackeline Pro - Ignition System</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
     <style>
         :root { --primary: #2ecc71; --dark: #2c3e50; --danger: #e74c3c; --info: #3498db; --gray: #95a5a6; --transfer: #9b59b6; --warning: #f1c40f; --gold: #f39c12; }
         * { box-sizing: border-box; }
@@ -13,11 +17,7 @@
         .col-izq { flex: 2; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; }
         .col-der { flex: 0.8; background: #fff; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; border: 2px solid var(--info); }
 
-        /* HEADER RESPONSIVE CORREGIDO */
-        .header { 
-            background: var(--primary); color: white; padding: 10px 15px; border-bottom: 4px solid #27ae60; 
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; flex-shrink: 0; 
-        }
+        .header { background: var(--primary); color: white; padding: 10px 15px; border-bottom: 4px solid #27ae60; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; flex-shrink: 0; }
         .header-titulo { font-weight: bold; font-size: 1.1rem; flex-grow: 1; text-align: center; order: 2; min-width: 150px; }
         .header-btns-izq { display: flex; gap: 12px; order: 1; }
         .header-btns-der { display: flex; order: 3; }
@@ -66,7 +66,6 @@
         .btn-m { flex: 1; padding: 15px; border: none; background: none; cursor: pointer; font-weight: bold; font-size: 1rem; }
         .btn-m-ok { color: var(--primary); border-left: 1px solid #eee; }
         
-        /* RESTAURADO: DISEÑO DEL HISTORIAL */
         .ticket-hist { background: #fffdf5; border: 1px solid #f9e79f; border-radius: 12px; padding: 12px; margin-bottom: 10px; text-align: left; }
         .cierre-card { background: #f8f9fa; border-left: 5px solid var(--dark); padding: 10px; margin-bottom: 10px; text-align: left; border-radius: 8px; border: 1px solid #eee; }
 
@@ -77,7 +76,6 @@
             .area-lista, .items-bolsa { height: 350px; }
         }
 
-        /* RESTAURADO: DISEÑO DEL REPORTE PDF PRO */
         @media print {
             body { background: white !important; overflow: visible !important; }
             .pantalla-principal, .overlay { display: none !important; }
@@ -94,6 +92,10 @@
             .copy-msg { font-size: 9pt; color: #7f8c8d; font-style: italic; margin-top: 5px; }
         }
         #reporte-pdf { display: none; }
+        
+        /* Indicador de estado en la nube */
+        .cloud-status { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #27ae60; margin-left: 8px; box-shadow: 0 0 8px #2ecc71; }
+        .cloud-syncing { background: #f1c40f; box-shadow: 0 0 8px #f1c40f; animation: blinker 1s linear infinite; }
     </style>
 </head>
 <body>
@@ -115,7 +117,7 @@
                 <button onclick="document.getElementById('importFile').click()" class="btn-head" title="Cargar Backup">📁</button>
                 <button onclick="verHistorialCierres()" class="btn-head" title="Bitácora de Cierres">📈</button>
             </div>
-            <div class="header-titulo">🏪 TIENDA JACKELINE</div>
+            <div class="header-titulo">🏪 TIENDA JACKELINE <span id="nubeIndicador" class="cloud-status" title="Conectado a Firebase"></span></div>
             <div class="header-btns-der">
                 <button onclick="verTodoHistorial()" class="btn-head" title="Historial de Hoy">🕒</button>
             </div>
@@ -178,27 +180,87 @@
         <tbody id="pdfCuerpoAlertas"></tbody>
     </table>
     <div class="pdf-footer">
-        <p style="font-weight:bold; color:var(--dark); margin-bottom:5px;">Ignition System - Punto de Venta Inteligente</p>
+        <p style="font-weight:bold; color:var(--dark); margin-bottom:5px;">Ignition System - Conectado a la Nube</p>
         <div class="copy-msg">© 2026 Ignition System - Todos los derechos reservados. Desarrollado por Wertty.</div>
     </div>
 </div>
 
 <script>
-    let prods = JSON.parse(localStorage.getItem("ign_p")) || [];
-    let efe = parseFloat(localStorage.getItem("ign_e")) || 0;
-    let tra = parseFloat(localStorage.getItem("ign_t")) || 0;
-    let tickets = JSON.parse(localStorage.getItem("ign_tk")) || [];
-    let cierresHistorial = JSON.parse(localStorage.getItem("ign_hist_cierres")) || [];
+    // --- 1. CONFIGURACIÓN DE FIREBASE ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyAiNMRqQ7ct3se2tPKiaLnyJfHb0Vspevo",
+        authDomain: "tienda-jackeline.firebaseapp.com",
+        projectId: "tienda-jackeline",
+        storageBucket: "tienda-jackeline.firebasestorage.app",
+        messagingSenderId: "17767264026",
+        appId: "1:17767264026:web:0ab41aab62ae99f54486a3"
+    };
+    
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // --- 2. VARIABLES DE LA TIENDA ---
+    let prods = [];
+    let efe = 0;
+    let tra = 0;
+    let tickets = [];
+    let cierresHistorial = [];
     let carrito = [];
 
-    function moneda(n) { return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n || 0); }
+    const moneda = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n || 0);
 
-    function refrescar(f = "") {
-        localStorage.setItem("ign_p", JSON.stringify(prods));
-        localStorage.setItem("ign_e", efe); localStorage.setItem("ign_t", tra);
-        localStorage.setItem("ign_tk", JSON.stringify(tickets));
-        localStorage.setItem("ign_hist_cierres", JSON.stringify(cierresHistorial));
-        
+    // --- 3. CONEXIÓN EN TIEMPO REAL (EL MAGO) ---
+    // Esto vigila la nube y actualiza todo automáticamente si hay cambios.
+    db.collection("tienda").doc("estado_actual").onSnapshot((doc) => {
+        if (doc.exists) {
+            const data = doc.data();
+            prods = data.prods || [];
+            efe = data.efe || 0;
+            tra = data.tra || 0;
+            tickets = data.tickets || [];
+            cierresHistorial = data.cierresHistorial || [];
+            
+            // Mantener el filtro de búsqueda activo
+            refrescarUI(document.getElementById('buscador').value);
+        } else {
+            // Si la nube está vacía (primera vez), subimos lo que haya en la PC
+            prods = JSON.parse(localStorage.getItem("ign_p")) || [];
+            efe = parseFloat(localStorage.getItem("ign_e")) || 0;
+            tra = parseFloat(localStorage.getItem("ign_t")) || 0;
+            tickets = JSON.parse(localStorage.getItem("ign_tk")) || [];
+            cierresHistorial = JSON.parse(localStorage.getItem("ign_hist_cierres")) || [];
+            guardarDatos();
+        }
+    });
+
+    // --- 4. FUNCIÓN PARA ENVIAR A LA NUBE ---
+    function guardarDatos() {
+        const indicador = document.getElementById("nubeIndicador");
+        indicador.classList.add("cloud-syncing"); // Pone la luz en amarillo (cargando)
+
+        db.collection("tienda").doc("estado_actual").set({
+            prods: prods,
+            efe: efe,
+            tra: tra,
+            tickets: tickets,
+            cierresHistorial: cierresHistorial
+        }).then(() => {
+            indicador.classList.remove("cloud-syncing"); // Vuelve a verde
+            
+            // Backup Local (por seguridad)
+            localStorage.setItem("ign_p", JSON.stringify(prods));
+            localStorage.setItem("ign_e", efe); 
+            localStorage.setItem("ign_t", tra);
+            localStorage.setItem("ign_tk", JSON.stringify(tickets));
+            localStorage.setItem("ign_hist_cierres", JSON.stringify(cierresHistorial));
+        }).catch((error) => {
+            alert("Error de conexión con la nube. Revisa el internet.");
+        });
+    }
+
+    // --- 5. ACTUALIZAR INTERFAZ ---
+    function refrescarUI(f = "") {
         const list = document.getElementById('lista'); list.innerHTML = "";
         let bodVal = 0;
         prods.forEach(p => {
@@ -225,12 +287,15 @@
         refrescarCarritoUI();
     }
 
+    // --- 6. FUNCIONALIDADES DE LA TIENDA ---
     function confirmarCaja() {
         if (efe === 0 && tra === 0) { alert("No hay ventas registradas para cerrar el día."); return; }
         showIgnition("Cierre Diario", "¿Desea cerrar la venta diaria? Se guardará en bitácora.", "", () => {
             const nuevoCierre = { fecha: new Date().toLocaleDateString(), hora: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), efectivo: efe, transferencia: tra, total: efe + tra, numVentas: tickets.length };
             cierresHistorial.push(nuevoCierre);
-            efe = 0; tra = 0; tickets = []; refrescar(); return true;
+            efe = 0; tra = 0; tickets = []; 
+            guardarDatos(); 
+            return true;
         });
     }
 
@@ -245,12 +310,10 @@
         document.getElementById('pdfEfe').innerText = moneda(efe);
         document.getElementById('pdfTra').innerText = moneda(tra);
         document.getElementById('pdfTotal').innerText = moneda(efe + tra);
-        
         const resumenVentas = {};
         tickets.forEach(tk => {
             tk.items.forEach(item => {
-                let n = item.n;
-                let c = item.cant || item.c || 0; 
+                let n = item.n, c = item.cant || item.c || 0; 
                 if(!resumenVentas[n]) resumenVentas[n] = { cant: 0, total: 0 };
                 resumenVentas[n].cant += c;
                 const pRef = prods.find(x => x.nombre === n);
@@ -278,7 +341,7 @@
         reader.onload = function(e) {
             try {
                 const data = JSON.parse(e.target.result);
-                if (data.prods) { prods = data.prods; efe = data.efe || 0; tra = data.tra || 0; tickets = data.tickets || []; cierresHistorial = data.cierresHistorial || []; refrescar(); }
+                if (data.prods) { prods = data.prods; efe = data.efe || 0; tra = data.tra || 0; tickets = data.tickets || []; cierresHistorial = data.cierresHistorial || []; guardarDatos(); }
             } catch (err) { alert("Error al cargar el archivo de respaldo."); }
         }; reader.readAsText(file);
     }
@@ -287,9 +350,10 @@
         const n = document.getElementById('inN').value.trim(); const p = parseInt(document.getElementById('inP').value); const c = parseInt(document.getElementById('inC').value);
         if(!n || isNaN(p) || isNaN(c)) return;
         const existe = prods.find(x => x.nombre.toLowerCase() === n.toLowerCase());
-        if(existe) { showIgnition("Duplicado", `"${n}" ya existe. ¿Sumar ${c} al stock?`, ``, () => { existe.cantidad += c; existe.oculto = false; refrescar(); return true; }); return; }
+        if(existe) { showIgnition("Duplicado", `"${n}" ya existe. ¿Sumar ${c} al stock?`, ``, () => { existe.cantidad += c; existe.oculto = false; guardarDatos(); return true; }); return; }
         prods.push({nombre: n, precio: p, cantidad: c, oculto: (c === 0)});
-        document.getElementById('inN').value = ""; document.getElementById('inP').value = ""; document.getElementById('inC').value = ""; refrescar();
+        document.getElementById('inN').value = ""; document.getElementById('inP').value = ""; document.getElementById('inC').value = ""; 
+        guardarDatos();
     }
 
     function confirmarVentaBolsa() {
@@ -306,7 +370,9 @@
             if (m === "E") efe += total; else tra += total;
             tickets.push({ id: tickets.length + 1, h: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), m: mTxt, tot: total, items: [...carrito] });
             carrito.forEach(item => { const p = prods.find(x => x.nombre === item.n); p.cantidad -= item.cant; if(p.cantidad <= 0) p.oculto = true; });
-            carrito = []; refrescar(); return true;
+            carrito = []; 
+            guardarDatos(); 
+            return true;
         });
     }
 
@@ -330,36 +396,29 @@
         tX.innerText = moneda(t);
     }
 
-    /* RESTAURADO: HISTORIAL DE VENTAS DE HOY CON DETALLES */
     function verTodoHistorial() {
         const hHtml = tickets.length > 0 ? tickets.slice().reverse().map(tk => {
             const metodo = tk.m || "N/A";
             const itemsList = tk.items.map(i => `• ${i.n} (${i.cant || i.c})`).join('<br>');
-            return `<div class="ticket-hist">
-                <b>Venta #${tk.id} - ${tk.h} [${metodo}]</b><br>
-                ${itemsList}
-                <div style="text-align:right; font-weight:bold; color:var(--primary); margin-top:5px;">Total: ${moneda(tk.tot)}</div>
-            </div>`;
+            return `<div class="ticket-hist"><b>Venta #${tk.id} - ${tk.h} [${metodo}]</b><br>${itemsList}<div style="text-align:right; font-weight:bold; color:var(--primary); margin-top:5px;">Total: ${moneda(tk.tot)}</div></div>`;
         }).join('') : "No hay ventas registradas el día de hoy.";
         showIgnition("Ventas de Hoy", null, hHtml, () => true);
     }
 
-    function cambiarEstado(n, o) { const p = prods.find(x => x.nombre === n); if(p) { p.oculto = o; refrescar(); } }
+    function cambiarEstado(n, o) { const p = prods.find(x => x.nombre === n); if(p) { p.oculto = o; guardarDatos(); } }
     
-    /* RESTAURADO: MODAL DE SURTIR CON INPUT DE CANTIDAD */
     function modalSurtir(n) { 
         showIgnition("Surtir Inventario", `¿Cuántas unidades de "${n}" ingresarán?`, `<input type="number" id="sC" value="10" style="width:100%; padding:15px; text-align:center; font-size:1.5rem; border-radius:10px;">`, () => { 
             const p = prods.find(x => x.nombre === n); 
             const unidades = parseInt(document.getElementById('sC').value);
-            if(unidades > 0) { p.cantidad = unidades; p.oculto = false; refrescar(); return true; } return false;
+            if(unidades > 0) { p.cantidad = unidades; p.oculto = false; guardarDatos(); return true; } return false;
         }); 
     }
     
-    /* RESTAURADO: MODAL DE EDITAR */
     function modalEditar(n) { 
         const p = prods.find(x => x.nombre === n); 
         showIgnition("Editar Producto", `Modificando: ${n}`, `<input type="text" id="eN" value="${p.nombre}" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px;"><input type="number" id="eP" value="${p.precio}" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px;"><input type="number" id="eS" value="${p.cantidad}" style="width:100%; padding:10px; border-radius:8px;">`, () => { 
-            p.nombre = document.getElementById('eN').value.trim(); p.precio = parseInt(document.getElementById('eP').value); p.cantidad = parseInt(document.getElementById('eS').value); if(p.cantidad <= 0) p.oculto = true; refrescar(); return true; 
+            p.nombre = document.getElementById('eN').value.trim(); p.precio = parseInt(document.getElementById('eP').value); p.cantidad = parseInt(document.getElementById('eS').value); if(p.cantidad <= 0) p.oculto = true; guardarDatos(); return true; 
         }); 
     }
 
@@ -372,8 +431,7 @@
     function closeAlert() { document.getElementById('ignModal').style.display = 'none'; }
     function vaciarCarrito() { carrito = []; refrescarCarritoUI(); }
     
-    document.getElementById('buscador').oninput = (e) => refrescar(e.target.value);
-    refrescar();
+    document.getElementById('buscador').oninput = (e) => refrescarUI(e.target.value);
 </script>
 </body>
 </html>
