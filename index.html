@@ -16,32 +16,37 @@
         .col-izq { flex: 2; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; }
         .col-der { flex: 0.8; background: #fff; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; border: 2px solid var(--info); }
 
-        /* HEADER CORREGIDO */
+        /* HEADER RE-DISEÑADO PARA EVITAR SOBREPOSICIÓN */
         .header { 
             background: var(--primary); 
             color: white; 
-            padding: 10px 15px; 
+            padding: 10px; 
+            border-bottom: 4px solid #27ae60; 
+            flex-shrink: 0;
             display: flex;
+            flex-wrap: wrap; /* Permite que los iconos bajen si no hay espacio */
             justify-content: space-between;
             align-items: center;
-            border-bottom: 4px solid #27ae60; 
-            position: relative; 
-            flex-shrink: 0; 
+            gap: 10px;
         }
 
         .header-titulo {
             font-weight: bold;
             font-size: 1.1rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 50%;
+            flex-grow: 1;
+            text-align: center;
+            order: 2; /* En móvil se queda en el centro */
         }
 
-        .header-controles {
+        .header-controles-izq {
             display: flex;
-            gap: 12px;
-            align-items: center;
+            gap: 15px;
+            order: 1;
+        }
+
+        .header-controles-der {
+            display: flex;
+            order: 3;
         }
 
         .btn-head {
@@ -49,15 +54,32 @@
             border: none;
             color: white;
             cursor: pointer;
-            font-size: 1.3rem;
-            padding: 5px;
+            font-size: 1.4rem;
+            padding: 4px;
             display: flex;
             align-items: center;
-            transition: transform 0.2s;
         }
 
-        .btn-head:active { transform: scale(0.9); }
-        
+        /* AJUSTE ESPECÍFICO PARA MÓVIL */
+        @media (max-width: 500px) {
+            .header {
+                padding: 5px 10px;
+            }
+            .header-titulo {
+                width: 100%; /* El título ocupa su propia línea abajo de los iconos */
+                order: 3;
+                font-size: 1rem;
+                margin-top: 2px;
+            }
+            .header-controles-izq {
+                order: 1;
+                gap: 20px;
+            }
+            .header-controles-der {
+                order: 2;
+            }
+        }
+
         .dashboard { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 10px; background: #fff; border-bottom: 1px solid #eee; flex-shrink: 0; }
         .stat-card { padding: 8px; border-radius: 12px; text-align: center; color: white; font-size: 0.8rem; }
         .bg-efe { background: #27ae60; } .bg-tra { background: var(--transfer); } .bg-bodega { background: var(--dark); }
@@ -101,14 +123,12 @@
             .pantalla-principal { flex-direction: column; height: auto; }
             .col-izq, .col-der { flex: none; width: 100%; height: 620px; }
             .area-lista, .items-bolsa { height: 350px; }
-            .header-titulo { font-size: 0.95rem; }
         }
 
         @media print {
             body { background: white !important; overflow: visible !important; }
             .pantalla-principal, .overlay { display: none !important; }
             #reporte-pdf { display: block !important; padding: 0; }
-            /* ... estilos pdf ... */
         }
         #reporte-pdf { display: none; }
     </style>
@@ -127,16 +147,17 @@
 <div class="pantalla-principal">
     <div class="col-izq">
         <div class="header">
-            <div class="header-controles">
-                <button class="btn-head" onclick="exportarDatos()" title="Guardar">💾</button>
-                <button class="btn-head" onclick="document.getElementById('importFile').click()" title="Cargar">📁</button>
-                <button class="btn-head" onclick="verHistorialCierres()" title="Bitácora">📈</button>
+            <div class="header-controles-izq">
+                <button class="btn-head" onclick="exportarDatos()">💾</button>
+                <button class="btn-head" onclick="document.getElementById('importFile').click()">📁</button>
+                <button class="btn-head" onclick="verHistorialCierres()">📈</button>
             </div>
             <div class="header-titulo">🏪 TIENDA JACKELINE</div>
-            <div class="header-controles">
-                <button class="btn-head" onclick="verTodoHistorial()" title="Historial">🕒</button>
+            <div class="header-controles-der">
+                <button class="btn-head" onclick="verTodoHistorial()">🕒</button>
             </div>
         </div>
+        
         <div class="dashboard">
             <div class="stat-card bg-efe"><small>💵 EFECTIVO</small><span id="dEfe" class="stat-val">$0</span></div>
             <div class="stat-card bg-tra"><small>📲 TRANSF.</small><span id="dTra" class="stat-val">$0</span></div>
@@ -170,7 +191,6 @@
 </div>
 
 <script>
-    /* ... (Aquí va toda la lógica de prods, efe, tra, tickets, etc. que ya tenemos) ... */
     let prods = JSON.parse(localStorage.getItem("ign_p")) || [];
     let efe = parseFloat(localStorage.getItem("ign_e")) || 0;
     let tra = parseFloat(localStorage.getItem("ign_t")) || 0;
@@ -182,11 +202,9 @@
 
     function refrescar(f = "") {
         localStorage.setItem("ign_p", JSON.stringify(prods));
-        localStorage.setItem("ign_e", efe); 
-        localStorage.setItem("ign_t", tra);
+        localStorage.setItem("ign_e", efe); localStorage.setItem("ign_t", tra);
         localStorage.setItem("ign_tk", JSON.stringify(tickets));
         localStorage.setItem("ign_hist_cierres", JSON.stringify(cierresHistorial));
-        
         const list = document.getElementById('lista'); list.innerHTML = "";
         let bodVal = 0;
         prods.forEach(p => {
@@ -212,7 +230,6 @@
         document.getElementById('dBod').innerText = moneda(bodVal);
         refrescarCarritoUI();
     }
-    /* ... (resto de funciones iguales) ... */
     function confirmarCaja() {
         if (efe === 0 && tra === 0) { alert("No hay ventas para cerrar."); return; }
         showIgnition("Cierre Diario", "¿Cerrar día? Se guardará en bitácora.", "", () => {
