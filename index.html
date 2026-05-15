@@ -93,8 +93,8 @@
         }
         #reporte-pdf { display: none; }
         
-        /* Indicador de estado en la nube */
-        .cloud-status { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #27ae60; margin-left: 8px; box-shadow: 0 0 8px #2ecc71; }
+        .cloud-status { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #e74c3c; margin-left: 8px; box-shadow: 0 0 8px #e74c3c; transition: all 0.3s; }
+        .cloud-online { background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
         .cloud-syncing { background: #f1c40f; box-shadow: 0 0 8px #f1c40f; animation: blinker 1s linear infinite; }
     </style>
 </head>
@@ -117,7 +117,7 @@
                 <button onclick="document.getElementById('importFile').click()" class="btn-head" title="Cargar Backup">📁</button>
                 <button onclick="verHistorialCierres()" class="btn-head" title="Bitácora de Cierres">📈</button>
             </div>
-            <div class="header-titulo">🏪 TIENDA JACKELINE <span id="nubeIndicador" class="cloud-status" title="Conectado a Firebase"></span></div>
+            <div class="header-titulo">🏪 TIENDA JACKELINE <span id="nubeIndicador" class="cloud-status" title="Desconectado"></span></div>
             <div class="header-btns-der">
                 <button onclick="verTodoHistorial()" class="btn-head" title="Historial de Hoy">🕒</button>
             </div>
@@ -196,23 +196,27 @@
         appId: "1:17767264026:web:0ab41aab62ae99f54486a3"
     };
     
-    // Inicializar Firebase
+    // Inicialización Segura
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // --- 2. VARIABLES DE LA TIENDA ---
     let prods = [];
     let efe = 0;
     let tra = 0;
     let tickets = [];
     let cierresHistorial = [];
     let carrito = [];
+    let usandoNube = false;
 
     const moneda = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n || 0);
 
-    // --- 3. CONEXIÓN EN TIEMPO REAL (EL MAGO) ---
-    // Esto vigila la nube y actualiza todo automáticamente si hay cambios.
+    // --- 2. SISTEMA CONTINGENTE DE CONEXIÓN (CON ERROR CATCHING) ---
     db.collection("tienda").doc("estado_actual").onSnapshot((doc) => {
+        usandoNube = true;
+        const indicador = document.getElementById("nubeIndicador");
+        indicador.className = "cloud-status cloud-online";
+        indicador.title = "Conectado a Firebase (Nube)";
+
         if (doc.exists) {
             const data = doc.data();
             prods = data.prods || [];
@@ -220,46 +224,58 @@
             tra = data.tra || 0;
             tickets = data.tickets || [];
             cierresHistorial = data.cierresHistorial || [];
-            
-            // Mantener el filtro de búsqueda activo
             refrescarUI(document.getElementById('buscador').value);
         } else {
-            // Si la nube está vacía (primera vez), subimos lo que haya en la PC
-            prods = JSON.parse(localStorage.getItem("ign_p")) || [];
-            efe = parseFloat(localStorage.getItem("ign_e")) || 0;
-            tra = parseFloat(localStorage.getItem("ign_t")) || 0;
-            tickets = JSON.parse(localStorage.getItem("ign_tk")) || [];
-            cierresHistorial = JSON.parse(localStorage.getItem("ign_hist_cierres")) || [];
+            // Si la colección no existe en la nube, la alimentamos con la memoria local
+            cargarRespaldoLocal();
             guardarDatos();
         }
+    }, (error) => {
+        console.error("Firestore Error:", error);
+        usandoNube = false;
+        const indicador = document.getElementById("nubeIndicador");
+        indicador.className = "cloud-status";
+        indicador.title = "Desconectado - Usando memoria local";
+        
+        // Si Firebase falla por falta de base de datos o reglas, cargamos de forma local obligatoriamente
+        cargarRespaldoLocal();
     });
 
-    // --- 4. FUNCIÓN PARA ENVIAR A LA NUBE ---
-    function guardarDatos() {
-        const indicador = document.getElementById("nubeIndicador");
-        indicador.classList.add("cloud-syncing"); // Pone la luz en amarillo (cargando)
-
-        db.collection("tienda").doc("estado_actual").set({
-            prods: prods,
-            efe: efe,
-            tra: tra,
-            tickets: tickets,
-            cierresHistorial: cierresHistorial
-        }).then(() => {
-            indicador.classList.remove("cloud-syncing"); // Vuelve a verde
-            
-            // Backup Local (por seguridad)
-            localStorage.setItem("ign_p", JSON.stringify(prods));
-            localStorage.setItem("ign_e", efe); 
-            localStorage.setItem("ign_t", tra);
-            localStorage.setItem("ign_tk", JSON.stringify(tickets));
-            localStorage.setItem("ign_hist_cierres", JSON.stringify(cierresHistorial));
-        }).catch((error) => {
-            alert("Error de conexión con la nube. Revisa el internet.");
-        });
+    function cargarRespaldoLocal() {
+        prods = JSON.parse(localStorage.getItem("ign_p")) || [];
+        efe = parseFloat(localStorage.getItem("ign_e")) || 0;
+        tra = parseFloat(localStorage.getItem("ign_t")) || 0;
+        tickets = JSON.parse(localStorage.getItem("ign_tk")) || [];
+        cierresHistorial = JSON.parse(localStorage.getItem("ign_hist_cierres")) || [];
+        refrescarUI(document.getElementById('buscador').value);
     }
 
-    // --- 5. ACTUALIZAR INTERFAZ ---
+    // --- 3. ENVÍO INTELIGENTE A LA NUBE Y LOCAL ---
+    function guardarDatos() {
+        // Guardado local obligatorio siempre (Doble Seguridad)
+        localStorage.setItem("ign_p", JSON.stringify(prods));
+        localStorage.setItem("ign_e", efe); 
+        localStorage.setItem("ign_t", tra);
+        localStorage.setItem("ign_tk", JSON.stringify(tickets));
+        localStorage.setItem("ign_hist_cierres", JSON.stringify(cierresHistorial));
+
+        if (usandoNube) {
+            const indicador = document.getElementById("nubeIndicador");
+            indicador.className = "cloud-status cloud-syncing";
+
+            db.collection("tienda").doc("estado_actual").set({
+                prods, efe, tra, tickets, cierresHistorial
+            }).then(() => {
+                indicador.className = "cloud-status cloud-online";
+            }).catch((err) => {
+                console.error("Error al sincronizar con Firebase:", err);
+            });
+        } else {
+            refrescarUI(document.getElementById('buscador').value);
+        }
+    }
+
+    // --- 4. INTERFAZ GRÁFICA COMPLETA ---
     function refrescarUI(f = "") {
         const list = document.getElementById('lista'); list.innerHTML = "";
         let bodVal = 0;
@@ -287,93 +303,15 @@
         refrescarCarritoUI();
     }
 
-    // --- 6. FUNCIONALIDADES DE LA TIENDA ---
-    function confirmarCaja() {
-        if (efe === 0 && tra === 0) { alert("No hay ventas registradas para cerrar el día."); return; }
-        showIgnition("Cierre Diario", "¿Desea cerrar la venta diaria? Se guardará en bitácora.", "", () => {
-            const nuevoCierre = { fecha: new Date().toLocaleDateString(), hora: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), efectivo: efe, transferencia: tra, total: efe + tra, numVentas: tickets.length };
-            cierresHistorial.push(nuevoCierre);
-            efe = 0; tra = 0; tickets = []; 
-            guardarDatos(); 
-            return true;
-        });
-    }
-
-    function verHistorialCierres() {
-        if (cierresHistorial.length === 0) { showIgnition("Bitácora", "Sin cierres.", "", () => true); return; }
-        const hHtml = cierresHistorial.slice().reverse().map(c => `<div class="cierre-card"><b>📅 ${c.fecha} - ${c.hora}</b><br><span>Efec: ${moneda(c.efectivo)} | Trans: ${moneda(c.transferencia)}</span><br><div style="text-align:right; font-weight:bold; color:var(--primary);">Total: ${moneda(c.total)}</div></div>`).join('');
-        showIgnition("Bitácora", "Cierres pasados:", hHtml, () => true);
-    }
-
-    function generarReporte() {
-        document.getElementById('pdfFecha').innerText = "Cierre: " + new Date().toLocaleString();
-        document.getElementById('pdfEfe').innerText = moneda(efe);
-        document.getElementById('pdfTra').innerText = moneda(tra);
-        document.getElementById('pdfTotal').innerText = moneda(efe + tra);
-        const resumenVentas = {};
-        tickets.forEach(tk => {
-            tk.items.forEach(item => {
-                let n = item.n, c = item.cant || item.c || 0; 
-                if(!resumenVentas[n]) resumenVentas[n] = { cant: 0, total: 0 };
-                resumenVentas[n].cant += c;
-                const pRef = prods.find(x => x.nombre === n);
-                resumenVentas[n].total += (c * (pRef ? pRef.precio : 0));
-            });
-        });
-        const rankingSorted = Object.entries(resumenVentas).sort((a,b) => b[1].cant - a[1].cant);
-        document.getElementById('pdfRankingContenido').innerHTML = rankingSorted.length > 0 ? rankingSorted.slice(0, 3).map((item, index) => `<div class="ranking-item"><span>${["🥇","🥈","🥉"][index]} <b>${item[0]}</b></span> <span>${item[1].cant} unidades vendidas</span></div>`).join('') : '<p>Sin ranking.</p>';
-        document.getElementById('pdfCuerpoVentas').innerHTML = Object.entries(resumenVentas).map(([n, d]) => `<tr><td>${n}</td><td>${d.cant} unidades.</td><td>${moneda(d.total)}</td></tr>`).join('');
-        const alertas = prods.filter(p => p.cantidad < 5 && !p.oculto);
-        document.getElementById('pdfCuerpoAlertas').innerHTML = alertas.length > 0 ? alertas.map(p => `<tr><td>${p.nombre}</td><td>${p.cantidad} unidades.</td><td style="color:red; font-weight:bold;">${p.cantidad === 0 ? 'AGOTADO' : 'STOCK BAJO'}</td></tr>`).join('') : '<tr><td colspan="3" style="text-align:center;">Inventario OK.</td></tr>';
-        
-        setTimeout(() => { window.print(); }, 300);
-    }
-
-    function exportarDatos() {
-        const data = { prods, efe, tra, tickets, cierresHistorial };
-        const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Backup_Jackeline_${new Date().toLocaleDateString().replace(/\//g, '-')}.json`; a.click();
-    }
-
-    function procesarImportacion(event) {
-        const file = event.target.files[0]; if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const data = JSON.parse(e.target.result);
-                if (data.prods) { prods = data.prods; efe = data.efe || 0; tra = data.tra || 0; tickets = data.tickets || []; cierresHistorial = data.cierresHistorial || []; guardarDatos(); }
-            } catch (err) { alert("Error al cargar el archivo de respaldo."); }
-        }; reader.readAsText(file);
-    }
-
+    // --- 5. LOGICA FUNCIONAL RESTAURADA ---
     function nuevoProd() {
         const n = document.getElementById('inN').value.trim(); const p = parseInt(document.getElementById('inP').value); const c = parseInt(document.getElementById('inC').value);
         if(!n || isNaN(p) || isNaN(c)) return;
         const existe = prods.find(x => x.nombre.toLowerCase() === n.toLowerCase());
         if(existe) { showIgnition("Duplicado", `"${n}" ya existe. ¿Sumar ${c} al stock?`, ``, () => { existe.cantidad += c; existe.oculto = false; guardarDatos(); return true; }); return; }
-        prods.push({nombre: n, precio: p, cantidad: c, oculto: (c === 0)});
+        prods.push({nombre: n, precio: p, chemical: p, cantidad: c, oculto: (c === 0)});
         document.getElementById('inN').value = ""; document.getElementById('inP').value = ""; document.getElementById('inC').value = ""; 
         guardarDatos();
-    }
-
-    function confirmarVentaBolsa() {
-        let total = 0; let resumen = carrito.map(i => `• ${i.n} (x${i.cant})`).join('<br>');
-        carrito.forEach(i => total += (i.p * i.cant));
-        showIgnition("Confirmar Venta", `Total a cobrar: ${moneda(total)}<br><br>${resumen}`, ``, modalFinalizar);
-    }
-
-    function modalFinalizar() {
-        let total = 0; carrito.forEach(i => total += (i.p * i.cant));
-        showIgnition("Método de Pago", `Total: ${moneda(total)}`, `<select id="vPago" style="width:100%; padding:15px; font-size:1.1rem; border-radius:10px;"><option value="E">💵 Efectivo</option><option value="T">📲 Transferencia</option></select>`, () => {
-            const m = document.getElementById('vPago').value;
-            const mTxt = m === "E" ? "Efec." : "Transf.";
-            if (m === "E") efe += total; else tra += total;
-            tickets.push({ id: tickets.length + 1, h: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), m: mTxt, tot: total, items: [...carrito] });
-            carrito.forEach(item => { const p = prods.find(x => x.nombre === item.n); p.cantidad -= item.cant; if(p.cantidad <= 0) p.oculto = true; });
-            carrito = []; 
-            guardarDatos(); 
-            return true;
-        });
     }
 
     function abrirVentaCant(n) {
@@ -396,6 +334,58 @@
         tX.innerText = moneda(t);
     }
 
+    function confirmarVentaBolsa() {
+        let total = 0; let resumen = carrito.map(i => `• ${i.n} (x${i.cant})`).join('<br>');
+        carrito.forEach(i => total += (i.p * i.cant));
+        showIgnition("Confirmar Venta", `Total a cobrar: ${moneda(total)}<br><br>${resumen}`, ``, modalFinalizar);
+    }
+
+    function modalFinalizar() {
+        let total = 0; carrito.forEach(i => total += (i.p * i.cant));
+        showIgnition("Método de Pago", `Total: ${moneda(total)}`, `<select id="vPago" style="width:100%; padding:15px; font-size:1.1rem; border-radius:10px;"><option value="E">💵 Efectivo</option><option value="T">📲 Transferencia</option></select>`, () => {
+            const m = document.getElementById('vPago').value;
+            const mTxt = m === "E" ? "Efec." : "Transf.";
+            if (m === "E") efe += total; else tra += total;
+            tickets.push({ id: tickets.length + 1, h: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), m: mTxt, tot: total, items: [...carrito] });
+            carrito.forEach(item => { const p = prods.find(x => x.nombre === item.n); p.cantidad -= item.cant; if(p.cantidad <= 0) p.oculto = true; });
+            carrito = []; 
+            guardarDatos(); 
+            return true;
+        });
+    }
+
+    function generarReporte() {
+        if(tickets.length === 0 && efe === 0 && tra === 0) { alert("No hay transacciones registradas hoy."); return; }
+        document.getElementById('pdfFecha').innerText = "Cierre: " + new Date().toLocaleString();
+        document.getElementById('pdfEfe').innerText = moneda(efe);
+        document.getElementById('pdfTra').innerText = moneda(tra);
+        document.getElementById('pdfTotal').innerText = moneda(efe + tra);
+        const resumenVentas = {};
+        tickets.forEach(tk => {
+            tk.items.forEach(item => {
+                let n = item.n, c = item.cant || item.c || 0; 
+                if(!resumenVentas[n]) resumenVentas[n] = { cant: 0, total: 0 };
+                resumenVentas[n].cant += c;
+                const pRef = prods.find(x => x.nombre === n);
+                resumenVentas[n].total += (c * (pRef ? pRef.precio : 0));
+            });
+        });
+        const rankingSorted = Object.entries(resumenVentas).sort((a,b) => b[1].cant - a[1].cant);
+        document.getElementById('pdfRankingContenido').innerHTML = rankingSorted.length > 0 ? rankingSorted.slice(0, 3).map((item, index) => `<div class="ranking-item"><span>${["🥇","🥈","🥉"][index]} <b>${item[0]}</b></span> <span>${item[1].cant} unidades vendidas</span></div>`).join('') : '<p>Sin ranking.</p>';
+        document.getElementById('pdfCuerpoVentas').innerHTML = Object.entries(resumenVentas).map(([n, d]) => `<tr><td>${n}</td><td>${d.cant} unidades.</td><td>${moneda(d.total)}</td></tr>`).join('');
+        const alertas = prods.filter(p => p.cantidad < 5 && !p.oculto);
+        document.getElementById('pdfCuerpoAlertas').innerHTML = alertas.length > 0 ? alertas.map(p => `<tr><td>${p.nombre}</td><td>${p.cantidad} unidades.</td><td style="color:red; font-weight:bold;">${p.cantidad === 0 ? 'AGOTADO' : 'STOCK BAJO'}</td></tr>`).join('') : '<tr><td colspan="3" style="text-align:center;">Inventario OK.</td></tr>';
+        setTimeout(() => { window.print(); }, 300);
+    }
+
+    function confirmarCaja() {
+        if (efe === 0 && tra === 0) { alert("No hay ventas registradas para cerrar el día."); return; }
+        showIgnition("Cierre Diario", "¿Desea cerrar la venta diaria? Se guardará en bitácora.", "", () => {
+            const nuevoCierre = { fecha: new Date().toLocaleDateString(), hora: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), efectivo: efe, transferencia: tra, total: efe + tra, numVentas: tickets.length };
+            cierresHistorial.push(nuevoCierre); efe = 0; tra = 0; tickets = []; guardarDatos(); return true;
+        });
+    }
+
     function verTodoHistorial() {
         const hHtml = tickets.length > 0 ? tickets.slice().reverse().map(tk => {
             const metodo = tk.m || "N/A";
@@ -405,12 +395,15 @@
         showIgnition("Ventas de Hoy", null, hHtml, () => true);
     }
 
-    function cambiarEstado(n, o) { const p = prods.find(x => x.nombre === n); if(p) { p.oculto = o; guardarDatos(); } }
-    
+    function verHistorialCierres() {
+        if (cierresHistorial.length === 0) { showIgnition("Bitácora", "Sin cierres.", "", () => true); return; }
+        const hHtml = cierresHistorial.slice().reverse().map(c => `<div class="cierre-card"><b>📅 ${c.fecha} - ${c.hora}</b><br><span>Efec: ${moneda(c.efectivo)} | Trans: ${moneda(c.transferencia)}</span><br><div style="text-align:right; font-weight:bold; color:var(--primary);">Total: ${moneda(c.total)}</div></div>`).join('');
+        showIgnition("Bitácora", "Cierres pasados:", hHtml, () => true);
+    }
+
     function modalSurtir(n) { 
         showIgnition("Surtir Inventario", `¿Cuántas unidades de "${n}" ingresarán?`, `<input type="number" id="sC" value="10" style="width:100%; padding:15px; text-align:center; font-size:1.5rem; border-radius:10px;">`, () => { 
-            const p = prods.find(x => x.nombre === n); 
-            const unidades = parseInt(document.getElementById('sC').value);
+            const p = prods.find(x => x.nombre === n); const unidades = parseInt(document.getElementById('sC').value);
             if(unidades > 0) { p.cantidad = unidades; p.oculto = false; guardarDatos(); return true; } return false;
         }); 
     }
@@ -422,16 +415,14 @@
         }); 
     }
 
-    function showIgnition(tit, msg, html, cb) {
-        document.getElementById('mContent').innerHTML = `<h3>${tit}</h3>${msg ? `<p>${msg}</p>` : ''}${html}`;
-        document.getElementById('mFooter').innerHTML = `<button class="btn-m" onclick="closeAlert()">Cerrar</button><button class="btn-m btn-m-ok" id="btnOk">Confirmar</button>`;
-        document.getElementById('ignModal').style.display = 'flex';
-        document.getElementById('btnOk').onclick = () => { if(cb()) closeAlert(); };
-    }
-    function closeAlert() { document.getElementById('ignModal').style.display = 'none'; }
+    function cambiarEstado(n, o) { const p = prods.find(x => x.nombre === n); if(p) { p.oculto = o; guardarDatos(); } }
     function vaciarCarrito() { carrito = []; refrescarCarritoUI(); }
+    function exportarDatos() { const blob = new Blob([JSON.stringify({ prods, efe, tra, tickets, cierresHistorial })], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Backup.json`; a.click(); }
+    function procesarImportacion(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const data = JSON.parse(e.target.result); if (data.prods) { prods = data.prods; efe = data.efe || 0; tra = data.tra || 0; tickets = data.tickets || []; cierresHistorial = data.cierresHistorial || []; guardarDatos(); } } catch (err) { alert("Error de archivo."); } }; reader.readAsText(file); }
+    function showIgnition(tit, msg, html, cb) { document.getElementById('mContent').innerHTML = `<h3>${tit}</h3>${msg ? `<p>${msg}</p>` : ''}${html}`; document.getElementById('mFooter').innerHTML = `<button class="btn-m" onclick="closeAlert()">Cerrar</button><button class="btn-m btn-m-ok" id="btnOk">Confirmar</button>`; document.getElementById('ignModal').style.display = 'flex'; document.getElementById('btnOk').onclick = () => { if(cb()) closeAlert(); }; }
+    function closeAlert() { document.getElementById('ignModal').style.display = 'none'; }
     
-    document.getElementById('buscador').oninput = (e) => refrescarUI(e.target.value);
+    document.getElementById('buscador').oninput = (e) => { if(usandoNube) refrescarUI(e.target.value); else refrescarUI(e.target.value); };
 </script>
 </body>
 </html>
