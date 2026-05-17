@@ -260,11 +260,9 @@
     let prods = []; let efe = 0; let tra = 0; let tickets = []; let cierresHistorial = []; let carrito = []; let fiados = [];
     let usandoNube = false; let categoriaActiva = ""; 
     let rolActual = localStorage.getItem("ign_rol") || null;
-    let dataSugerenciaWA = "";
 
     const moneda = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n || 0);
 
-    // SISTEMA DE TOASTS
     function showToast(msg, type = "success") {
         const container = document.getElementById("toast-container");
         const toast = document.createElement("div");
@@ -289,7 +287,6 @@
         if(barra) { barra.focus(); }
     }
 
-    // Auto-focus cuando carga la página
     window.onload = enfocarBuscador;
 
     function checkRol() {
@@ -299,7 +296,7 @@
             document.getElementById('loginModal').style.display = 'none';
             if(rolActual === 'cajero') document.body.classList.add('rol-cajero');
             else document.body.classList.remove('rol-cajero');
-            setTimeout(enfocarBuscador, 500); // Focus después de login
+            setTimeout(enfocarBuscador, 500); 
         }
     }
     
@@ -427,7 +424,6 @@
     const barraBuscador = document.getElementById('buscador');
     barraBuscador.oninput = (e) => refrescarUI(e.target.value);
     
-    // MODO ESCÁNER PRO: Lectura y re-enfoque automático
     barraBuscador.onkeypress = (e) => {
         if (e.key === 'Enter') {
             const val = barraBuscador.value.trim();
@@ -449,7 +445,6 @@
                 } else {
                     showToast("Producto no encontrado o QR inválido.", "error");
                 }
-                // Limpiar la barra y re-enfocarla para el siguiente disparo del escáner
                 barraBuscador.value = ''; 
                 refrescarUI(''); 
                 enfocarBuscador();
@@ -480,7 +475,7 @@
                 showToast(`${n} removido de la bolsa`, "warning");
             }
             refrescarCarritoUI();
-            enfocarBuscador(); // Devolver el control al cajero para seguir escaneando
+            enfocarBuscador(); 
         }
     }
 
@@ -657,17 +652,46 @@
     }
 
     function actualizarCalculoSugerido() {
-        let total = 0; let textoWA = "📋 *LISTA DE COMPRAS - TIENDA JACKELINE* 📋\n\n";
+        let total = 0; 
         document.querySelectorAll('.input-sug').forEach(inp => {
-            let cant = parseInt(inp.value) || 0; let nombre = inp.dataset.nombre; let costoBase = parseFloat(inp.dataset.costo) || 0;
-            let subtotal = cant * costoBase; total += subtotal; let idFila = nombre.replace(/[^a-zA-Z0-9]/g, '');
+            let cant = parseInt(inp.value) || 0; 
+            let costoBase = parseFloat(inp.dataset.costo) || 0;
+            let subtotal = cant * costoBase; 
+            total += subtotal; 
+            let idFila = inp.dataset.nombre.replace(/[^a-zA-Z0-9]/g, '');
             document.getElementById(`subtot_${idFila}`).innerText = moneda(subtotal);
-            if(cant > 0) { textoWA += `• ${nombre}: ${cant} und. (${moneda(subtotal)})\n`; }
         });
-        textoWA += `\n💰 *Total Inversión Estimada:* ${moneda(total)}`; dataSugerenciaWA = textoWA; document.getElementById('totalSugerencia').innerText = moneda(total);
+        document.getElementById('totalSugerencia').innerText = moneda(total);
     }
 
-    function enviarWA() { const num = document.getElementById('numWA').value.trim(); if(!num) { showToast("Falta el teléfono", "error"); return; } window.open(`https://wa.me/57${num}?text=${encodeURIComponent(dataSugerenciaWA)}`, '_blank'); }
+    // AQUI ESTA LA MAGIA: Construcción segura del texto para evitar errores de codificación
+    function enviarWA() { 
+        const num = document.getElementById('numWA').value.trim(); 
+        if(!num) { showToast("Falta el teléfono", "error"); return; } 
+
+        let total = 0;
+        // %F0%9F%93%8B = 📋
+        let urlText = "%F0%9F%93%8B *LISTA DE COMPRAS - TIENDA JACKELINE* %F0%9F%93%8B%0A%0A";
+
+        document.querySelectorAll('.input-sug').forEach(inp => {
+            let cant = parseInt(inp.value) || 0;
+            let nombre = inp.dataset.nombre;
+            let costoBase = parseFloat(inp.dataset.costo) || 0;
+            let subtotal = cant * costoBase;
+
+            if(cant > 0) {
+                total += subtotal;
+                // %F0%9F%9B%92 = 🛒
+                urlText += "%F0%9F%9B%92 " + encodeURIComponent(nombre) + ": " + cant + " und. (" + encodeURIComponent(moneda(subtotal)) + ")%0A";
+            }
+        });
+
+        // %F0%9F%92%B0 = 💰
+        urlText += "%0A%F0%9F%92%B0 *Total Inversión Estimada:* " + encodeURIComponent(moneda(total));
+
+        // API directa de WhatsApp
+        window.open(`https://api.whatsapp.com/send?phone=57${num}&text=${urlText}`, '_blank'); 
+    }
 
     function generarReporte() {
         if(tickets.length === 0 && efe === 0 && tra === 0) { showToast("No hay transacciones hoy.", "warning"); return; }
