@@ -349,7 +349,10 @@
         tickets.forEach(tk => { tk.items.forEach(i => { const pRef = prods.find(x => x.nombre === i.n); let costoBase = pRef ? (pRef.costo || 0) : 0; gananciaHoyVal += (i.p - costoBase) * i.cant; }); });
         fiados.forEach(f => { totalFiados += f.tot; });
 
-        prods.forEach(p => {
+        // LA MEJORA: Clonamos el array visualmente y empujamos los ocultos al final (true > false)
+        const prodsVisuales = prods.slice().sort((a, b) => (a.oculto === b.oculto) ? 0 : a.oculto ? 1 : -1);
+
+        prodsVisuales.forEach(p => {
             if(!p.oculto) { bodVal += (p.precio * p.cantidad); invVal += ((p.costo || 0) * p.cantidad); }
             const matchTexto = (!f || p.nombre.toLowerCase().includes(f.toLowerCase()) || p.qr === f);
             const matchCat = (!categoriaActiva || p.cat === categoriaActiva);
@@ -357,7 +360,7 @@
             const esVisibleParaUsuario = (rolActual === 'admin') ? true : !p.oculto;
 
             if(esVisibleParaUsuario && matchTexto && matchCat) {
-                const ag = p.cantidad === 0; const esBajo = p.cantidad < 5 && p.cantidad > 0;
+                const ag = p.cantidad === 0; const esBajo = p.cantidad < 3 && p.cantidad > 0;
                 const bClase = ag ? 'stock-agotado' : (esBajo ? 'stock-critico' : 'stock-ok');
                 const div = document.createElement('div'); div.className = `producto-item ${p.oculto ? 'producto-oculto' : ''}`;
                 
@@ -367,14 +370,18 @@
                             ? `<button onclick="abrirVentaCant('${p.nombre}')" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; font-weight:bold; cursor:pointer;">+ Añadir</button>
                                <button class="btn-icon admin-only" onclick="modalEditar('${p.nombre}')" style="margin-left:5px" title="Editar">✏️</button>
                                <button class="btn-icon admin-only" onclick="cambiarEstado('${p.nombre}', true)" title="Ocultar">👁️‍🗨️</button>` 
-                            : `<button class="btn-icon admin-only" onclick="cambiarEstado('${p.nombre}', false)" title="Mostrar (Desocultar)">👁️</button>
-                               <button class="btn-icon admin-only" onclick="modalSurtir('${p.nombre}')" title="Surtir Inventario">📦</button>
+                            : `<button onclick="modalSurtir('${p.nombre}')" style="background:var(--info); color:white; border:none; padding:10px 15px; border-radius:10px; font-weight:bold; cursor:pointer;" title="Ingresar stock para activar">📦 Surtir y Activar</button>
                                <button class="btn-icon admin-only" onclick="modalEditar('${p.nombre}')" style="margin-left:5px" title="Editar">✏️</button>`
                         }
                     </div>`;
                 list.appendChild(div);
             }
         });
+        
+        // Dividimos el cálculo de bodega total para que no se afecte por el clonado/orden
+        bodVal = 0; invVal = 0;
+        prods.forEach(p => { if(!p.oculto) { bodVal += (p.precio * p.cantidad); invVal += ((p.costo || 0) * p.cantidad); } });
+
         document.getElementById('dEfe').innerText = moneda(efe); document.getElementById('dTra').innerText = moneda(tra); document.getElementById('dFiado').innerText = moneda(totalFiados); document.getElementById('dBod').innerText = moneda(bodVal); document.getElementById('dInv').innerText = moneda(invVal); document.getElementById('dGan').innerText = moneda(bodVal - invVal); document.getElementById('dGanHoy').innerText = moneda(gananciaHoyVal);
         refrescarCarritoUI();
     }
@@ -442,7 +449,14 @@
             if (val) {
                 const prod = prods.find(x => x.qr === val);
                 if (prod) {
-                    if (prod.oculto || prod.cantidad <= 0) {
+                    if (prod.oculto) {
+                        if(rolActual === 'admin') {
+                            showToast(`El producto "${prod.nombre}" está oculto. Usa el botón "Surtir y Activar".`, "warning");
+                            return; 
+                        } else {
+                            showToast(`Producto no disponible.`, "error");
+                        }
+                    } else if (prod.cantidad <= 0) {
                         showToast(`El producto "${prod.nombre}" está agotado.`, "error");
                     } else {
                         const yaEn = carrito.find(x => x.n === prod.nombre);
@@ -454,12 +468,13 @@
                         }
                         refrescarCarritoUI();
                     }
+                    
+                    barraBuscador.value = ''; 
+                    refrescarUI(''); 
+                    enfocarBuscador();
                 } else {
-                    showToast("Producto no encontrado o QR inválido.", "error");
+                    barraBuscador.blur(); 
                 }
-                barraBuscador.value = ''; 
-                refrescarUI(''); 
-                enfocarBuscador();
             }
         }
     };
@@ -804,7 +819,22 @@
         showToast("Generando reporte PDF...", "success"); setTimeout(() => { window.print(); }, 800);
     }
 
-    function modalSurtir(n) { showIgnition("Surtir Inventario", `¿Cuántas unidades de "${n}" ingresarán?`, `<input type="number" id="sC" value="10" style="width:100%; padding:15px; text-align:center; font-size:1.5rem; border-radius:10px; border:2px solid var(--info); outline:none;">`, () => { const p = prods.find(x => x.nombre === n); const unidades = parseInt(document.getElementById('sC').value); if(unidades > 0) { p.cantidad = unidades; p.oculto = false; guardarDatos(); showToast("Inventario actualizado"); return true; } return false; }); setTimeout(() => { document.getElementById('sC').focus(); document.getElementById('sC').select(); }, 100); }
+    function modalSurtir(n) { 
+        showIgnition("Surtir y Activar", `¿Cuántas nuevas unidades de <b>${n}</b> vas a ingresar?`, `<input type="number" id="sC" value="10" style="width:100%; padding:15px; text-align:center; font-size:1.5rem; border-radius:10px; border:2px solid var(--info); outline:none;">`, () => { 
+            const p = prods.find(x => x.nombre === n); 
+            const unidades = parseInt(document.getElementById('sC').value); 
+            if(unidades > 0) { 
+                p.cantidad = (parseInt(p.cantidad) || 0) + unidades; 
+                p.oculto = false; 
+                guardarDatos(); 
+                showToast("Inventario actualizado y producto en circulación"); 
+                return true; 
+            } 
+            showToast("Ingresa una cantidad válida", "error");
+            return false; 
+        }); 
+        setTimeout(() => { document.getElementById('sC').focus(); document.getElementById('sC').select(); }, 100); 
+    }
     
     function modalEditar(n) { 
         const p = prods.find(x => x.nombre === n); 
