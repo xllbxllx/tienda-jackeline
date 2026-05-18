@@ -47,7 +47,8 @@
             .header-btns-der { order: 2; }
         }
 
-        .dashboard { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 10px; background: #fff; flex-shrink: 0; }
+        /* MODIFICADO: Cambiado a 4 columnas para que queden perfectamente alineadas */
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 10px; background: #fff; flex-shrink: 0; }
         .dashboard-bodega { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 10px 10px 10px; background: #fff; border-bottom: 1px solid #eee; flex-shrink: 0; }
         .stat-card { padding: 8px; border-radius: 12px; text-align: center; color: white; font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .bg-efe { background: #27ae60; } .bg-tra { background: var(--transfer); } .bg-bodega { background: var(--dark); }
@@ -170,14 +171,15 @@
         
         <div class="dashboard">
             <div class="stat-card bg-efe"><small>💵 EFECTIVO</small><span id="dEfe" class="stat-val">$0</span></div>
-            <div class="stat-card bg-tra"><small>📲 TRANSF.</small><span id="dTra" class="stat-val">$0</span></div>
+            <div class="stat-card bg-tra"><small>📲 TRANSFERENCIA</small><span id="dTra" class="stat-val">$0</span></div>
             <div class="stat-card" style="background:#e67e22;" title="Dinero que deben los clientes"><small>📒 POR COBRAR</small><span id="dFiado" class="stat-val">$0</span></div>
+            <div class="stat-card" style="background:#34495e;" title="Total de ventas histórico (Efec + Trans + Fiados)"><small>💰 TOTAL VENTAS</small><span id="dTotalVentas" class="stat-val">$0</span></div>
         </div>
         
         <div class="dashboard-bodega admin-only">
-            <div class="stat-card bg-bodega" title="Valor si se vende toda la mercancía"><small>📦 BODEGA TOTAL</small><span id="dBod" class="stat-val">$0</span></div>
+            <div class="stat-card bg-bodega" title="Valor si se vende toda la mercancía"><small>📦 DINERO EN INVENTARIO</small><span id="dBod" class="stat-val">$0</span></div>
             <div class="stat-card" style="background:#7f8c8d;" title="Dinero invertido al comprar"><small>🛒 INVERSIÓN</small><span id="dInv" class="stat-val">$0</span></div>
-            <div class="stat-card" style="background:#f39c12;" title="Ganancia libre estimada"><small>📈 ESPERADA</small><span id="dGan" class="stat-val">$0</span></div>
+            <div class="stat-card" style="background:#f39c12;" title="Ganancia libre estimada"><small>📈 GANANCIA ESPERADA</small><span id="dGan" class="stat-val">$0</span></div>
             <div class="stat-card" style="background:var(--primary);" title="Ganancia libre de ventas hoy"><small>💰 GANANCIA HOY</small><span id="dGanHoy" class="stat-val">$0</span></div>
         </div>
 
@@ -239,11 +241,6 @@
     <table class="pdf-table">
         <thead><tr><th>Producto</th><th>Cant.</th><th>Venta Total</th><th>Ganancia Neta</th></tr></thead>
         <tbody id="pdfCuerpoVentas"></tbody>
-    </table>
-    <h3 style="border-left: 5px solid var(--danger); padding-left: 10px;">📦 Reposición de Inventario Actual</h3>
-    <table class="pdf-table">
-        <thead><tr><th>Producto</th><th>Unidades Actuales</th><th>Estado</th></tr></thead>
-        <tbody id="pdfCuerpoAlertas"></tbody>
     </table>
     <div class="pdf-footer">
         <p style="font-weight:bold; color:var(--dark); margin-bottom:5px;">Ignition System - Conectado a la Nube</p>
@@ -350,6 +347,7 @@
 
     function setFiltroCat(cat, btn) { categoriaActiva = cat; document.querySelectorAll('.btn-cat').forEach(b => b.classList.remove('active')); btn.classList.add('active'); refrescarUI(document.getElementById('buscador').value); }
 
+    // --- MODIFICADO: Ahora calcula e inyecta dinámicamente el TOTAL VENTAS ---
     function refrescarUI(f = "") {
         const list = document.getElementById('lista'); list.innerHTML = ""; let bodVal = 0, invVal = 0, gananciaHoyVal = 0, totalFiados = 0;
         
@@ -387,7 +385,18 @@
         bodVal = 0; invVal = 0;
         prods.forEach(p => { if(!p.oculto) { bodVal += (p.precio * p.cantidad); invVal += ((p.costo || 0) * p.cantidad); } });
 
-        document.getElementById('dEfe').innerText = moneda(efe); document.getElementById('dTra').innerText = moneda(tra); document.getElementById('dFiado').innerText = moneda(totalFiados); document.getElementById('dBod').innerText = moneda(bodVal); document.getElementById('dInv').innerText = moneda(invVal); document.getElementById('dGan').innerText = moneda(bodVal - invVal); document.getElementById('dGanHoy').innerText = moneda(gananciaHoyVal);
+        // Lógica contable exacta: Suma las tres fuentes de transacciones
+        let totalVentasHistorial = efe + tra + totalFiados;
+
+        document.getElementById('dEfe').innerText = moneda(efe); 
+        document.getElementById('dTra').innerText = moneda(tra); 
+        document.getElementById('dFiado').innerText = moneda(totalFiados); 
+        document.getElementById('dTotalVentas').innerText = moneda(totalVentasHistorial); // <--- Actualiza la nueva tarjeta
+        
+        document.getElementById('dBod').innerText = moneda(bodVal); 
+        document.getElementById('dInv').innerText = moneda(invVal); 
+        document.getElementById('dGan').innerText = moneda(bodVal - invVal); 
+        document.getElementById('dGanHoy').innerText = moneda(gananciaHoyVal);
         refrescarCarritoUI();
     }
 
@@ -552,7 +561,6 @@
         showIgnition("Confirmar Venta", `Total a cobrar: <strong style="color:var(--primary); font-size:1.2rem;">${moneda(total)}</strong><br><br><div style="text-align:left; font-size:0.9rem; color:gray; max-height:100px; overflow-y:auto; padding:10px; background:#f9f9f9; border-radius:8px;">${resumen}</div>`, ``, modalFinalizar);
     }
 
-    // --- NUEVO: Función para alternar las opciones de pago (Efectivo/Transferencia/Fiado) ---
     function togglePagoOpciones() {
         const m = document.getElementById('vPago').value;
         document.getElementById('vCliente').style.display = m === 'F' ? 'block' : 'none';
@@ -561,7 +569,6 @@
         if(areaEfe) areaEfe.style.display = m === 'E' ? 'block' : 'none';
     }
 
-    // --- NUEVO: Función para calcular el cambio (vueltos) ---
     function calcularCambio(total) {
         const recibido = parseFloat(document.getElementById('vRecibido').value) || 0;
         const res = document.getElementById('vCambioRes');
@@ -575,7 +582,6 @@
         }
     }
 
-    // --- MODIFICADO: modalFinalizar ahora incluye la calculadora opcional ---
     function modalFinalizar() {
         let total = 0; carrito.forEach(i => total += (i.p * i.cant));
         showIgnition("Método de Pago", `Total a cobrar: <strong style="color:var(--primary); font-size:1.4rem;">${moneda(total)}</strong>`, `
@@ -610,7 +616,6 @@
             carrito = []; guardarDatos(); return true;
         });
         
-        // Enfoca automáticamente el campo para escribir el billete apenas se abre el modal
         setTimeout(() => { const vR = document.getElementById('vRecibido'); if(vR) vR.focus(); }, 100);
     }
 
@@ -774,8 +779,6 @@
         document.getElementById('pdfRankingContenido').innerHTML = rankingSorted.length > 0 ? rankingSorted.slice(0, 3).map((item, index) => `<div class="ranking-item"><span>${["🥇","🥈","🥉"][index]} <b>${item[0]}</b></span> <span>${item[1].cant} unidades vendidas</span></div>`).join('') : '<p>Sin ranking.</p>';
         document.getElementById('pdfCuerpoVentas').innerHTML = Object.entries(resumenVentas).map(([n, d]) => `<tr><td>${n}</td><td>${d.cant} u.</td><td>${moneda(d.total)}</td><td style="color:var(--primary); font-weight:bold;">+${moneda(d.gananciaItem)}</td></tr>`).join('');
         
-        const alertas = prods.filter(p => p.cantidad < 3 && !p.oculto);
-        document.getElementById('pdfCuerpoAlertas').innerHTML = alertas.length > 0 ? alertas.map(p => `<tr><td>${p.nombre}</td><td>${p.cantidad} units.</td><td style="color:red; font-weight:bold;">${p.cantidad === 0 ? 'AGOTADO' : 'STOCK BAJO'}</td></tr>`).join('') : '<tr><td colspan="3" style="text-align:center;">Inventario OK.</td></tr>';
         showToast("Generando reporte PDF...", "success"); setTimeout(() => { window.print(); }, 800);
     }
 
@@ -860,8 +863,6 @@
             document.getElementById('pdfRankingContenido').innerHTML = '<p style="color:gray; font-size:0.9rem; text-align:center;">Información detallada no guardada en cierres antiguos.</p>'; document.getElementById('pdfCuerpoVentas').innerHTML = '<tr><td colspan="4" style="text-align:center; color:gray;">Solo hay datos financieros.</td></tr>';
         }
         
-        const alertas = prods.filter(p => p.cantidad < 3 && !p.oculto);
-        document.getElementById('pdfCuerpoAlertas').innerHTML = alertas.length > 0 ? alertas.map(p => `<tr><td>${p.nombre}</td><td>${p.cantidad} unidades.</td><td style="color:red; font-weight:bold;">${p.cantidad === 0 ? 'AGOTADO' : 'STOCK BAJO'}</td></tr>`).join('') : '<tr><td colspan="3" style="text-align:center;">Inventario OK.</td></tr>';
         showToast("Generando reporte PDF...", "success"); setTimeout(() => { window.print(); }, 800);
     }
 
@@ -908,7 +909,7 @@
     function cambiarEstado(n, o) { const p = prods.find(x => x.nombre === n); if(p) { p.oculto = o; guardarDatos(); showToast(o ? `Producto ocultado` : `Producto visible`); } }
     function vaciarCarrito() { carrito = []; refrescarCarritoUI(); }
     function exportarDatos() { const blob = new Blob([JSON.stringify({ prods, efe, tra, tickets, fiados, cierresHistorial })], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Backup_Jackeline_${new Date().toLocaleDateString().replace(/\//g, '-')}.json`; a.click(); showToast("Copia de seguridad descargada"); }
-    function procesarImportacion(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const data = JSON.parse(e.target.result); if (data.prods) { prods = data.prods; efe = data.efe || 0; tra = data.tra || 0; tickets = data.tickets || []; fiados = data.fiados || []; cierresHistorial = data.cierresHistorial || []; guardarDatos(); showToast("Restauración completada con éxito"); } } catch (err) { showToast("Error al leer el archivo de backup", "error"); } }; reader.readAsText(file); }
+    function processarImportacion(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const data = JSON.parse(e.target.result); if (data.prods) { prods = data.prods; efe = data.efe || 0; tra = data.tra || 0; tickets = data.tickets || []; fiados = data.fiados || []; cierresHistorial = data.cierresHistorial || []; guardarDatos(); showToast("Restauración completada con éxito"); } } catch (err) { showToast("Error al leer el archivo de backup", "error"); } }; reader.readAsText(file); }
     function showIgnition(tit, msg, html, cb) { document.getElementById('mContent').innerHTML = `<h3>${tit}</h3>${msg ? `<p>${msg}</p>` : ''}${html}`; document.getElementById('mFooter').innerHTML = `<button class="btn-m" onclick="closeAlert()">Cerrar</button><button class="btn-m btn-m-ok" id="btnOk">Confirmar</button>`; document.getElementById('ignModal').style.display = 'flex'; document.getElementById('btnOk').onclick = () => { if(cb()) { closeAlert(); enfocarBuscador(); } }; }
     function closeAlert() { document.getElementById('ignModal').style.display = 'none'; enfocarBuscador(); }
     
