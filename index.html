@@ -353,13 +353,25 @@
             if(!p.oculto) { bodVal += (p.precio * p.cantidad); invVal += ((p.costo || 0) * p.cantidad); }
             const matchTexto = (!f || p.nombre.toLowerCase().includes(f.toLowerCase()) || p.qr === f);
             const matchCat = (!categoriaActiva || p.cat === categoriaActiva);
-            if(!p.oculto && matchTexto && matchCat) {
+            
+            const esVisibleParaUsuario = (rolActual === 'admin') ? true : !p.oculto;
+
+            if(esVisibleParaUsuario && matchTexto && matchCat) {
                 const ag = p.cantidad === 0; const esBajo = p.cantidad < 5 && p.cantidad > 0;
                 const bClase = ag ? 'stock-agotado' : (esBajo ? 'stock-critico' : 'stock-ok');
                 const div = document.createElement('div'); div.className = `producto-item ${p.oculto ? 'producto-oculto' : ''}`;
                 
                 div.innerHTML = `<div style="flex:1"><strong>${p.nombre}</strong> <span style="font-size:0.7rem; color:gray;">[${p.cat || 'Otros'}]</span><br><small>Costo: ${moneda(p.costo || 0)} | Venta: ${moneda(p.precio)}</small><br><span class="badge-stock ${bClase}" style="margin-top:4px;">${p.cantidad} unidades.</span></div>
-                    <div style="display:flex; align-items:center;">${!p.oculto ? `<button onclick="abrirVentaCant('${p.nombre}')" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; font-weight:bold; cursor:pointer;">+ Añadir</button><button class="btn-icon admin-only" onclick="modalEditar('${p.nombre}')" style="margin-left:5px" title="Editar">✏️</button><button class="btn-icon admin-only" onclick="cambiarEstado('${p.nombre}', true)" title="Ocultar">👁️‍🗨️</button>` : `<button class="btn-icon admin-only" onclick="modalSurtir('${p.nombre}')">👁️</button>`}</div>`;
+                    <div style="display:flex; align-items:center;">
+                        ${!p.oculto 
+                            ? `<button onclick="abrirVentaCant('${p.nombre}')" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; font-weight:bold; cursor:pointer;">+ Añadir</button>
+                               <button class="btn-icon admin-only" onclick="modalEditar('${p.nombre}')" style="margin-left:5px" title="Editar">✏️</button>
+                               <button class="btn-icon admin-only" onclick="cambiarEstado('${p.nombre}', true)" title="Ocultar">👁️‍🗨️</button>` 
+                            : `<button class="btn-icon admin-only" onclick="cambiarEstado('${p.nombre}', false)" title="Mostrar (Desocultar)">👁️</button>
+                               <button class="btn-icon admin-only" onclick="modalSurtir('${p.nombre}')" title="Surtir Inventario">📦</button>
+                               <button class="btn-icon admin-only" onclick="modalEditar('${p.nombre}')" style="margin-left:5px" title="Editar">✏️</button>`
+                        }
+                    </div>`;
                 list.appendChild(div);
             }
         });
@@ -664,13 +676,11 @@
         document.getElementById('totalSugerencia').innerText = moneda(total);
     }
 
-    // AQUI ESTA LA MAGIA: Construcción segura del texto para evitar errores de codificación
     function enviarWA() { 
         const num = document.getElementById('numWA').value.trim(); 
         if(!num) { showToast("Falta el teléfono", "error"); return; } 
 
         let total = 0;
-        // %F0%9F%93%8B = 📋
         let urlText = "%F0%9F%93%8B *LISTA DE COMPRAS - TIENDA JACKELINE* %F0%9F%93%8B%0A%0A";
 
         document.querySelectorAll('.input-sug').forEach(inp => {
@@ -681,15 +691,11 @@
 
             if(cant > 0) {
                 total += subtotal;
-                // %F0%9F%9B%92 = 🛒
                 urlText += "%F0%9F%9B%92 " + encodeURIComponent(nombre) + ": " + cant + " und. (" + encodeURIComponent(moneda(subtotal)) + ")%0A";
             }
         });
 
-        // %F0%9F%92%B0 = 💰
         urlText += "%0A%F0%9F%92%B0 *Total Inversión Estimada:* " + encodeURIComponent(moneda(total));
-
-        // API directa de WhatsApp
         window.open(`https://api.whatsapp.com/send?phone=57${num}&text=${urlText}`, '_blank'); 
     }
 
