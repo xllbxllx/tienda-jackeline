@@ -25,10 +25,16 @@
         .toast.error { border-left: 6px solid var(--danger); }
         .toast.warning { border-left: 6px solid var(--warning); color: #333; background: #fff; }
 
+        /* MODIFICADO: Contenedor de login con soporte para esquina técnica */
         .login-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(44, 62, 80, 0.98); z-index:3000; display:flex; flex-direction:column; justify-content:center; align-items:center; color:white; backdrop-filter:blur(8px); }
         .btn-login { background:var(--primary); color:white; border:none; padding:15px 30px; border-radius:12px; font-size:1.2rem; cursor:pointer; margin:10px; width:280px; font-weight:bold; box-shadow:0 4px 15px rgba(0,0,0,0.3); transition:transform 0.2s; }
         .btn-login:hover { transform:scale(1.05); }
         .btn-login-admin { background:var(--dark); border:2px solid var(--primary); }
+
+        /* NUEVO: Esquina técnica oculta en el login para resguardar backups */
+        .login-technical-corner { position: absolute; bottom: 20px; right: 20px; display: flex; gap: 10px; }
+        .btn-tech-backup { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 8px 14px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
+        .btn-tech-backup:hover { background: rgba(255, 255, 255, 0.2); border-color: var(--primary); }
 
         .pantalla-principal { display: flex; gap: 15px; height: 100%; max-width: 1400px; margin: auto; width: 100%; }
         .col-izq { flex: 2; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; }
@@ -45,9 +51,9 @@
             .header-titulo { width: 100%; order: 3; font-size: 1rem; margin-top: 5px; }
             .header-btns-izq { order: 1; gap: 15px; }
             .header-btns-der { order: 2; }
+            .login-technical-corner { bottom: 10px; right: 10px; left: 10px; justify-content: center; }
         }
 
-        /* MODIFICADO: Cambiado a 4 columnas para que queden perfectamente alineadas */
         .dashboard { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 10px; background: #fff; flex-shrink: 0; }
         .dashboard-bodega { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 0 10px 10px 10px; background: #fff; border-bottom: 1px solid #eee; flex-shrink: 0; }
         .stat-card { padding: 8px; border-radius: 12px; text-align: center; color: white; font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -139,6 +145,11 @@
     <p style="margin-bottom:30px; opacity:0.8;">Sistema Gerencial - Seleccione su rol</p>
     <button class="btn-login" onclick="iniciarSesion('cajero')">🧑‍💼 Entrar como Cajero</button>
     <button class="btn-login btn-login-admin" onclick="iniciarSesion('admin')">👑 Entrar como Admin</button>
+
+    <div class="login-technical-corner">
+        <button onclick="exportarDatos()" class="btn-tech-backup" title="Exportar copia de seguridad">💾 Exportar</button>
+        <button onclick="document.getElementById('importFile').click()" class="btn-tech-backup" title="Importar base de datos">📁 Importar</button>
+    </div>
 </div>
 
 <div class="overlay" id="ignModal">
@@ -155,8 +166,6 @@
         <div class="header">
             <div class="header-btns-izq">
                 <button onclick="abrirModalNuevoProd()" class="btn-head admin-only" title="Registrar Nuevo Producto">📦</button>
-                <button onclick="exportarDatos()" class="btn-head admin-only" title="Guardar Backup">💾</button>
-                <button onclick="document.getElementById('importFile').click()" class="btn-head admin-only" title="Cargar Backup">📁</button>
                 <button onclick="verHistorialCierres()" class="btn-head admin-only" title="Resumen Rápido">📋</button>
                 <button onclick="abrirPanelReportes()" class="btn-head admin-only" title="Reportes Avanzados en PDF">📅</button>
                 <button onclick="verSugerenciaCompras()" class="btn-head admin-only" title="Sugerencia de Compras API">💡</button>
@@ -347,7 +356,6 @@
 
     function setFiltroCat(cat, btn) { categoriaActiva = cat; document.querySelectorAll('.btn-cat').forEach(b => b.classList.remove('active')); btn.classList.add('active'); refrescarUI(document.getElementById('buscador').value); }
 
-    // --- MODIFICADO: Ahora calcula e inyecta dinámicamente el TOTAL VENTAS ---
     function refrescarUI(f = "") {
         const list = document.getElementById('lista'); list.innerHTML = ""; let bodVal = 0, invVal = 0, gananciaHoyVal = 0, totalFiados = 0;
         
@@ -385,13 +393,12 @@
         bodVal = 0; invVal = 0;
         prods.forEach(p => { if(!p.oculto) { bodVal += (p.precio * p.cantidad); invVal += ((p.costo || 0) * p.cantidad); } });
 
-        // Lógica contable exacta: Suma las tres fuentes de transacciones
         let totalVentasHistorial = efe + tra + totalFiados;
 
         document.getElementById('dEfe').innerText = moneda(efe); 
         document.getElementById('dTra').innerText = moneda(tra); 
         document.getElementById('dFiado').innerText = moneda(totalFiados); 
-        document.getElementById('dTotalVentas').innerText = moneda(totalVentasHistorial); // <--- Actualiza la nueva tarjeta
+        document.getElementById('dTotalVentas').innerText = moneda(totalVentasHistorial); 
         
         document.getElementById('dBod').innerText = moneda(bodVal); 
         document.getElementById('dInv').innerText = moneda(invVal); 
@@ -909,7 +916,7 @@
     function cambiarEstado(n, o) { const p = prods.find(x => x.nombre === n); if(p) { p.oculto = o; guardarDatos(); showToast(o ? `Producto ocultado` : `Producto visible`); } }
     function vaciarCarrito() { carrito = []; refrescarCarritoUI(); }
     function exportarDatos() { const blob = new Blob([JSON.stringify({ prods, efe, tra, tickets, fiados, cierresHistorial })], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Backup_Jackeline_${new Date().toLocaleDateString().replace(/\//g, '-')}.json`; a.click(); showToast("Copia de seguridad descargada"); }
-    function processarImportacion(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const data = JSON.parse(e.target.result); if (data.prods) { prods = data.prods; efe = data.efe || 0; tra = data.tra || 0; tickets = data.tickets || []; fiados = data.fiados || []; cierresHistorial = data.cierresHistorial || []; guardarDatos(); showToast("Restauración completada con éxito"); } } catch (err) { showToast("Error al leer el archivo de backup", "error"); } }; reader.readAsText(file); }
+    function procesarImportacion(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const data = JSON.parse(e.target.result); if (data.prods) { prods = data.prods; efe = data.efe || 0; tra = data.tra || 0; tickets = data.tickets || []; fiados = data.fiados || []; cierresHistorial = data.cierresHistorial || []; guardarDatos(); showToast("Restauración completada con éxito"); } } catch (err) { showToast("Error al leer el archivo de backup", "error"); } }; reader.readAsText(file); }
     function showIgnition(tit, msg, html, cb) { document.getElementById('mContent').innerHTML = `<h3>${tit}</h3>${msg ? `<p>${msg}</p>` : ''}${html}`; document.getElementById('mFooter').innerHTML = `<button class="btn-m" onclick="closeAlert()">Cerrar</button><button class="btn-m btn-m-ok" id="btnOk">Confirmar</button>`; document.getElementById('ignModal').style.display = 'flex'; document.getElementById('btnOk').onclick = () => { if(cb()) { closeAlert(); enfocarBuscador(); } }; }
     function closeAlert() { document.getElementById('ignModal').style.display = 'none'; enfocarBuscador(); }
     
