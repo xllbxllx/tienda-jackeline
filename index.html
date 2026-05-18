@@ -188,7 +188,7 @@
             <button class="btn-cat" onclick="setFiltroCat('Otros', this)">Otros</button>
         </div>
 
-        <div class="buscador-area"><input type="text" id="buscador" placeholder="🔍 Buscar nombre o escanear código de barras (El cursor se enfoca solo)..."></div>
+        <div class="buscador-area"><input type="text" id="buscador" autocomplete="off" placeholder="🔍 Buscar nombre o escanear código de barras (El cursor se enfoca solo)..."></div>
         <div class="area-lista" id="lista"></div>
 
         <div class="fijo-inferior">
@@ -349,7 +349,7 @@
         tickets.forEach(tk => { tk.items.forEach(i => { const pRef = prods.find(x => x.nombre === i.n); let costoBase = pRef ? (pRef.costo || 0) : 0; gananciaHoyVal += (i.p - costoBase) * i.cant; }); });
         fiados.forEach(f => { totalFiados += f.tot; });
 
-        // LA MEJORA: Clonamos el array visualmente y empujamos los ocultos al final (true > false)
+        // Clonamos el array visualmente y empujamos los ocultos al final (true > false)
         const prodsVisuales = prods.slice().sort((a, b) => (a.oculto === b.oculto) ? 0 : a.oculto ? 1 : -1);
 
         prodsVisuales.forEach(p => {
@@ -443,6 +443,7 @@
     const barraBuscador = document.getElementById('buscador');
     barraBuscador.oninput = (e) => refrescarUI(e.target.value);
     
+    // AQUI ESTA LA MEJORA: SE LIMPIA SIEMPRE DESPUÉS DE UN ENTER
     barraBuscador.onkeypress = (e) => {
         if (e.key === 'Enter') {
             const val = barraBuscador.value.trim();
@@ -452,7 +453,6 @@
                     if (prod.oculto) {
                         if(rolActual === 'admin') {
                             showToast(`El producto "${prod.nombre}" está oculto. Usa el botón "Surtir y Activar".`, "warning");
-                            return; 
                         } else {
                             showToast(`Producto no disponible.`, "error");
                         }
@@ -468,13 +468,12 @@
                         }
                         refrescarCarritoUI();
                     }
-                    
-                    barraBuscador.value = ''; 
-                    refrescarUI(''); 
-                    enfocarBuscador();
-                } else {
-                    barraBuscador.blur(); 
                 }
+                
+                // Sin importar si encontró o no un producto por QR, limpiamos la barra.
+                barraBuscador.value = ''; 
+                refrescarUI(''); 
+                enfocarBuscador();
             }
         }
     };
@@ -841,10 +840,10 @@
         showIgnition("Editar Producto", `Modificando: <b>${n}</b>`, `
         <div style="text-align:left; margin-top:10px;">
             <label style="font-weight:bold;">Nombre:</label>
-            <input type="text" id="eN" value="${p.nombre}" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ccc;">
+            <input type="text" id="eN" autocomplete="off" value="${p.nombre}" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ccc;">
             <div style="display:flex; gap:10px; margin-bottom:10px;">
                 <div style="flex:1;"><label style="font-weight:bold;">Categoría:</label><select id="eCat" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;"><option value="Bebidas" ${p.cat==='Bebidas'?'selected':''}>Bebidas</option><option value="Paquetes" ${p.cat==='Paquetes'?'selected':''}>Paquetes</option><option value="Dulces" ${p.cat==='Dulces'?'selected':''}>Dulces</option><option value="Aseo" ${p.cat==='Aseo'?'selected':''}>Aseo</option><option value="Otros" ${p.cat==='Otros'?'selected':''}>Otros</option></select></div>
-                <div style="flex:1;"><label style="font-weight:bold;">QR / Código:</label><input type="text" id="eQR" value="${p.qr || ''}" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;"></div>
+                <div style="flex:1;"><label style="font-weight:bold;">QR / Código:</label><input type="text" id="eQR" autocomplete="off" value="${p.qr || ''}" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;"></div>
             </div>
             <div style="display:flex; gap:10px; margin-bottom:10px;">
                 <div style="flex:1;"><label style="font-weight:bold;">Costo ($):</label><input type="number" id="eCosto" value="${p.costo || 0}" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;"></div>
