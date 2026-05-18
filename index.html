@@ -25,13 +25,11 @@
         .toast.error { border-left: 6px solid var(--danger); }
         .toast.warning { border-left: 6px solid var(--warning); color: #333; background: #fff; }
 
-        /* MODIFICADO: Contenedor de login con soporte para esquina técnica */
         .login-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(44, 62, 80, 0.98); z-index:3000; display:flex; flex-direction:column; justify-content:center; align-items:center; color:white; backdrop-filter:blur(8px); }
         .btn-login { background:var(--primary); color:white; border:none; padding:15px 30px; border-radius:12px; font-size:1.2rem; cursor:pointer; margin:10px; width:280px; font-weight:bold; box-shadow:0 4px 15px rgba(0,0,0,0.3); transition:transform 0.2s; }
         .btn-login:hover { transform:scale(1.05); }
         .btn-login-admin { background:var(--dark); border:2px solid var(--primary); }
 
-        /* NUEVO: Esquina técnica oculta en el login para resguardar backups */
         .login-technical-corner { position: absolute; bottom: 20px; right: 20px; display: flex; gap: 10px; }
         .btn-tech-backup { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 8px 14px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
         .btn-tech-backup:hover { background: rgba(255, 255, 255, 0.2); border-color: var(--primary); }
@@ -114,22 +112,33 @@
             .area-lista, .items-bolsa { height: 350px; }
         }
 
+        /* CONFIGURACIÓN DE IMPRESIÓN DINÁMICA (REPORTES Y CHECKLIST) */
         @media print {
-            body { background: white !important; overflow: visible !important; }
+            body { background: white !important; overflow: visible !important; height: auto; }
             .pantalla-principal, .overlay, #toast-container { display: none !important; }
-            #reporte-pdf { display: block !important; padding: 0; }
-            .pdf-header { background: var(--dark); color: white; padding: 25px; text-align: center; border-radius: 0 0 30px 30px; margin-bottom: 30px; }
+            
+            /* Renderizado condicional según qué reporte se mande a imprimir */
+            #reporte-pdf.print-active { display: block !important; padding: 0; }
+            #checklist-pdf.print-active { display: block !important; padding: 0; }
+
+            .pdf-header { background: var(--dark) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: white !important; padding: 25px; text-align: center; border-radius: 0 0 30px 30px; margin-bottom: 30px; }
             .pdf-dashboard { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px; margin-bottom: 40px; }
             .pdf-card { border: 2px solid #eee; border-radius: 15px; padding: 15px; text-align: center; }
+            
             .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-            .pdf-table th { background: #f4f4f4; padding: 12px; text-align: left; border-bottom: 3px solid var(--primary); font-size: 11pt; }
+            .pdf-table th { background: #f4f4f4 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 12px; text-align: left; border-bottom: 3px solid var(--primary); font-size: 11pt; color: #333; }
             .pdf-table td { padding: 12px; border-bottom: 1px solid #eee; font-size: 10.5pt; }
-            .ranking-card { background: #fffcf0; border: 1px solid var(--gold); border-radius: 15px; padding: 20px; margin-bottom: 30px; }
+            
+            /* Estilos específicos para las líneas de la planilla de conteo físico */
+            .linea-conteo { border-bottom: 1px dotted #999; display: inline-block; width: 50px; height: 15px; }
+            .cuadro-check { border: 2px solid #555; display: inline-block; width: 18px; height: 18px; border-radius: 4px; }
+
+            .ranking-card { background: #fffcf0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border: 1px solid var(--gold); border-radius: 15px; padding: 20px; margin-bottom: 30px; }
             .ranking-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #ddd; }
             .pdf-footer { margin-top: 60px; text-align: center; border-top: 1px solid #eee; padding-top: 20px; }
             .copy-msg { font-size: 9pt; color: #7f8c8d; font-style: italic; margin-top: 5px; }
         }
-        #reporte-pdf { display: none; }
+        #reporte-pdf, #checklist-pdf { display: none; }
         
         .cloud-status { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #e74c3c; margin-left: 8px; box-shadow: 0 0 8px #e74c3c; transition: all 0.3s; }
         .cloud-online { background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
@@ -166,6 +175,7 @@
         <div class="header">
             <div class="header-btns-izq">
                 <button onclick="abrirModalNuevoProd()" class="btn-head admin-only" title="Registrar Nuevo Producto">📦</button>
+                <button onclick="generarChecklistFisico()" class="btn-head admin-only" title="Planilla de Conteo Físico">✅</button>
                 <button onclick="verHistorialCierres()" class="btn-head admin-only" title="Resumen Rápido">📋</button>
                 <button onclick="abrirPanelReportes()" class="btn-head admin-only" title="Reportes Avanzados en PDF">📅</button>
                 <button onclick="verSugerenciaCompras()" class="btn-head admin-only" title="Sugerencia de Compras API">💡</button>
@@ -254,6 +264,42 @@
     <div class="pdf-footer">
         <p style="font-weight:bold; color:var(--dark); margin-bottom:5px;">Ignition System - Conectado a la Nube</p>
         <div class="copy-msg">© 2026 Ignition System - Todos los derechos reservados. Desarrollado por Wertty.</div>
+    </div>
+</div>
+
+<div id="checklist-pdf">
+    <div class="pdf-header" style="background: #34495e !important;">
+        <h1 style="margin:0;">TIENDA JACKELINE</h1>
+        <p id="checklistFecha" style="margin:5px 0; opacity:0.8;"></p>
+        <p style="margin:0; font-weight:bold; letter-spacing: 1px;">PLANILLA DE CONTROL DE INVENTARIO FÍSICO</p>
+    </div>
+    
+    <p style="font-size: 0.95rem; color: #555; margin-bottom: 20px; font-style: italic;">
+        Instrucciones: Recorra la tienda contando físicamente las unidades. Escriba el valor en la columna "Conteo Físico" y verifique que coincida con el stock registrado en el sistema.
+    </p>
+
+    <table class="pdf-table">
+        <thead>
+            <tr>
+                <th style="width: 15%;">Categoría</th>
+                <th style="width: 40%;">Nombre del Producto</th>
+                <th style="width: 15%; text-align: center;">Stock Sistema</th>
+                <th style="width: 15%; text-align: center;">Conteo Físico</th>
+                <th style="width: 10%; text-align: center;">Diferencia</th>
+                <th style="width: 5%; text-align: center;">✔️</th>
+            </tr>
+        </thead>
+        <tbody id="checklistCuerpo"></tbody>
+    </table>
+
+    <div style="margin-top: 40px; display: flex; justify-content: space-between; padding: 0 30px;">
+        <div style="border-top: 1px solid #333; width: 200px; text-align: center; font-size: 0.9rem; padding-top: 5px;">Firma de Auditor</div>
+        <div style="border-top: 1px solid #333; width: 200px; text-align: center; font-size: 0.9rem; padding-top: 5px;">V°B° Administrador</div>
+    </div>
+
+    <div class="pdf-footer">
+        <p style="font-weight:bold; color:var(--dark); margin-bottom:5px;">Ignition System - Hoja de Auditoría Física</p>
+        <div class="copy-msg">© 2026 Ignition System - Control de Mermas y Stocks. Desarrollado por Wertty.</div>
     </div>
 </div>
 
@@ -772,6 +818,11 @@
 
     function generarReporte() {
         if(tickets.length === 0 && efe === 0 && tra === 0) { showToast("No hay transacciones hoy.", "warning"); return; }
+        
+        // MODIFICADO: Switch de clases de impresión activas para evitar colisiones
+        document.getElementById('checklist-pdf').classList.remove('print-active');
+        document.getElementById('reporte-pdf').classList.add('print-active');
+
         document.getElementById('pdfFecha').innerText = "Cierre Diario: " + new Date().toLocaleString(); document.getElementById('pdfEfe').innerText = moneda(efe); document.getElementById('pdfTra').innerText = moneda(tra); document.getElementById('pdfTotal').innerText = moneda(efe + tra);
         const resumenVentas = {}; let gananciaLibreTotal = 0; 
         tickets.forEach(tk => { tk.items.forEach(item => {
@@ -787,6 +838,40 @@
         document.getElementById('pdfCuerpoVentas').innerHTML = Object.entries(resumenVentas).map(([n, d]) => `<tr><td>${n}</td><td>${d.cant} u.</td><td>${moneda(d.total)}</td><td style="color:var(--primary); font-weight:bold;">+${moneda(d.gananciaItem)}</td></tr>`).join('');
         
         showToast("Generando reporte PDF...", "success"); setTimeout(() => { window.print(); }, 800);
+    }
+
+    // NUEVA FUNCIÓN: Genera e inyecta dinámicamente la planilla de conteo físico ordenando los productos por categoría
+    function generarChecklistFisico() {
+        if(prods.length === 0) { showToast("No hay productos en la base de datos para auditar.", "warning"); return; }
+        
+        // Switch de clases de impresión activas
+        document.getElementById('reporte-pdf').classList.remove('print-active');
+        document.getElementById('checklist-pdf').classList.add('print-active');
+
+        document.getElementById('checklistFecha').innerText = "Fecha de Emisión: " + new Date().toLocaleDateString() + " - " + new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        
+        // Clonamos y ordenamos alfabéticamente por categoría, luego por nombre
+        const prodsOrdenados = prods.slice().sort((a, b) => {
+            const catA = a.cat || 'Otros';
+            const catB = b.cat || 'Otros';
+            if (catA !== catB) return catA.localeCompare(catB);
+            return a.nombre.localeCompare(b.nombre);
+        });
+
+        const cuerpo = document.getElementById('checklistCuerpo');
+        cuerpo.innerHTML = prodsOrdenados.map(p => `
+            <tr>
+                <td style="font-weight: bold; color: #555;">${p.cat || 'Otros'}</td>
+                <td><strong>${p.nombre}</strong> ${p.oculto ? '<span style="font-size:0.75rem; color:gray;">(Oculto)</span>' : ''}</td>
+                <td style="text-align: center; font-weight: bold;">${p.cantidad} u.</td>
+                <td style="text-align: center;"><span class="linea-conteo"></span></td>
+                <td style="text-align: center;"><span class="linea-conteo"></span></td>
+                <td style="text-align: center;"><span class="cuadro-check"></span></td>
+            </tr>
+        `).join('');
+
+        showToast("Preparando hoja de conteo físico...", "success");
+        setTimeout(() => { window.print(); }, 800);
     }
 
     function confirmarCaja() {
@@ -846,6 +931,10 @@
         let totalEfe = 0, totalTra = 0, totalGral = 0, gananciaLibreTotal = 0; const resumenVentas = {};
         const cierresFiltrados = cierresHistorial.filter(c => { let t = c.timestamp; if(!t) { const p = c.fecha.split('/'); if(p.length === 3) t = new Date(p[2], p[1]-1, p[0], 12, 0, 0).getTime(); } return t >= tIni && t <= tFin; });
         if(cierresFiltrados.length === 0) { showToast("No hay registros en esas fechas.", "warning"); return; }
+
+        // Switch de clases de impresión activas
+        document.getElementById('checklist-pdf').classList.remove('print-active');
+        document.getElementById('reporte-pdf').classList.add('print-active');
 
         cierresFiltrados.forEach(c => {
             totalEfe += (c.efectivo || 0); totalTra += (c.transferencia || 0); totalGral += (c.total || 0);
