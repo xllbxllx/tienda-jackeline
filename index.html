@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tienda Jackeline Pro - Ignition System</title>
+    <title>Tienda Jackeline</title>
     
     <link rel="icon" href="./logo-tienda.png" type="image/png">
     
@@ -552,19 +552,45 @@
         showIgnition("Confirmar Venta", `Total a cobrar: <strong style="color:var(--primary); font-size:1.2rem;">${moneda(total)}</strong><br><br><div style="text-align:left; font-size:0.9rem; color:gray; max-height:100px; overflow-y:auto; padding:10px; background:#f9f9f9; border-radius:8px;">${resumen}</div>`, ``, modalFinalizar);
     }
 
-    function toggleFiadoInput() {
+    // --- NUEVO: Función para alternar las opciones de pago (Efectivo/Transferencia/Fiado) ---
+    function togglePagoOpciones() {
         const m = document.getElementById('vPago').value;
         document.getElementById('vCliente').style.display = m === 'F' ? 'block' : 'none';
+        
+        const areaEfe = document.getElementById('areaEfectivo');
+        if(areaEfe) areaEfe.style.display = m === 'E' ? 'block' : 'none';
     }
 
+    // --- NUEVO: Función para calcular el cambio (vueltos) ---
+    function calcularCambio(total) {
+        const recibido = parseFloat(document.getElementById('vRecibido').value) || 0;
+        const res = document.getElementById('vCambioRes');
+        
+        if (recibido === 0) {
+            res.innerHTML = "";
+        } else if (recibido >= total) {
+            res.innerHTML = `Cambio a devolver: <br><strong style="color:var(--primary); font-size:1.3rem;">${moneda(recibido - total)}</strong>`;
+        } else {
+            res.innerHTML = `<span style="color:var(--danger); font-weight:bold;">⚠️ Faltan ${moneda(total - recibido)}</span>`;
+        }
+    }
+
+    // --- MODIFICADO: modalFinalizar ahora incluye la calculadora opcional ---
     function modalFinalizar() {
         let total = 0; carrito.forEach(i => total += (i.p * i.cant));
-        showIgnition("Método de Pago", `Total a cobrar: <strong style="color:var(--primary); font-size:1.2rem;">${moneda(total)}</strong>`, `
-        <select id="vPago" onchange="toggleFiadoInput()" style="width:100%; padding:15px; font-size:1.1rem; border-radius:10px; border:2px solid #ccc; outline:none; margin-top:10px;">
+        showIgnition("Método de Pago", `Total a cobrar: <strong style="color:var(--primary); font-size:1.4rem;">${moneda(total)}</strong>`, `
+        <select id="vPago" onchange="togglePagoOpciones()" style="width:100%; padding:15px; font-size:1.1rem; border-radius:10px; border:2px solid #ccc; outline:none; margin-top:10px; margin-bottom:10px;">
             <option value="E">💵 Efectivo</option>
             <option value="T">📲 Transferencia</option>
             <option value="F">📒 Fiado (Crédito)</option>
         </select>
+        
+        <div id="areaEfectivo" style="background:#f4f4f4; padding:15px; border-radius:10px; border:1px solid #ddd; text-align:left;">
+            <label style="font-size:0.9rem; font-weight:bold; color:var(--dark);">¿Con cuánto paga? (Opcional):</label>
+            <input type="number" id="vRecibido" autocomplete="off" placeholder="Ej: 50000" onkeyup="calcularCambio(${total})" style="width:100%; padding:12px; margin-top:5px; border-radius:8px; border:2px solid var(--info); font-size:1.1rem; outline:none; text-align:center;">
+            <div id="vCambioRes" style="margin-top:10px; text-align:center; min-height: 25px;"></div>
+        </div>
+
         <input type="text" id="vCliente" autocomplete="off" placeholder="Nombre completo del cliente" style="display:none; width:100%; margin-top:10px; padding:15px; border-radius:10px; font-size:1rem; border:2px solid var(--info); outline:none;">
         `, () => {
             const m = document.getElementById('vPago').value; 
@@ -583,6 +609,9 @@
             carrito.forEach(item => { const p = prods.find(x => x.nombre === item.n); p.cantidad -= item.cant; if(p.cantidad <= 0) p.oculto = true; });
             carrito = []; guardarDatos(); return true;
         });
+        
+        // Enfoca automáticamente el campo para escribir el billete apenas se abre el modal
+        setTimeout(() => { const vR = document.getElementById('vRecibido'); if(vR) vR.focus(); }, 100);
     }
 
     function verFiados() {
@@ -746,7 +775,7 @@
         document.getElementById('pdfCuerpoVentas').innerHTML = Object.entries(resumenVentas).map(([n, d]) => `<tr><td>${n}</td><td>${d.cant} u.</td><td>${moneda(d.total)}</td><td style="color:var(--primary); font-weight:bold;">+${moneda(d.gananciaItem)}</td></tr>`).join('');
         
         const alertas = prods.filter(p => p.cantidad < 3 && !p.oculto);
-        document.getElementById('pdfCuerpoAlertas').innerHTML = alertas.length > 0 ? alertas.map(p => `<tr><td>${p.nombre}</td><td>${p.cantidad} unidades.</td><td style="color:red; font-weight:bold;">${p.cantidad === 0 ? 'AGOTADO' : 'STOCK BAJO'}</td></tr>`).join('') : '<tr><td colspan="3" style="text-align:center;">Inventario OK.</td></tr>';
+        document.getElementById('pdfCuerpoAlertas').innerHTML = alertas.length > 0 ? alertas.map(p => `<tr><td>${p.nombre}</td><td>${p.cantidad} units.</td><td style="color:red; font-weight:bold;">${p.cantidad === 0 ? 'AGOTADO' : 'STOCK BAJO'}</td></tr>`).join('') : '<tr><td colspan="3" style="text-align:center;">Inventario OK.</td></tr>';
         showToast("Generando reporte PDF...", "success"); setTimeout(() => { window.print(); }, 800);
     }
 
