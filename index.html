@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tienda Jackeline Pro - Ignition System</title>
     
+    <link rel="icon" href="https://images.icon-icons.com/317/PNG/512/shop-icon_34368.png" type="image/png">
+    
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
@@ -188,7 +190,12 @@
             <button class="btn-cat" onclick="setFiltroCat('Otros', this)">Otros</button>
         </div>
 
-        <div class="buscador-area"><input type="text" id="buscador" autocomplete="off" placeholder="🔍 Buscar nombre o escanear código de barras (El cursor se enfoca solo)..."></div>
+        <div class="buscador-area">
+            <div style="position: relative; width: 100%;">
+                <input type="text" id="buscador" autocomplete="off" placeholder="🔍 Buscar nombre o escanear código de barras..." style="padding-right: 45px; width: 100%;">
+                <button id="btnLimpiarBuscador" onclick="limpiarBuscador()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; font-size: 1.2rem; color: #e74c3c; cursor: pointer; display: none; padding: 5px; outline: none;" title="Limpiar búsqueda">✖</button>
+            </div>
+        </div>
         <div class="area-lista" id="lista"></div>
 
         <div class="fijo-inferior">
@@ -349,7 +356,6 @@
         tickets.forEach(tk => { tk.items.forEach(i => { const pRef = prods.find(x => x.nombre === i.n); let costoBase = pRef ? (pRef.costo || 0) : 0; gananciaHoyVal += (i.p - costoBase) * i.cant; }); });
         fiados.forEach(f => { totalFiados += f.tot; });
 
-        // Clonamos el array visualmente y empujamos los ocultos al final (true > false)
         const prodsVisuales = prods.slice().sort((a, b) => (a.oculto === b.oculto) ? 0 : a.oculto ? 1 : -1);
 
         prodsVisuales.forEach(p => {
@@ -378,7 +384,6 @@
             }
         });
         
-        // Dividimos el cálculo de bodega total para que no se afecte por el clonado/orden
         bodVal = 0; invVal = 0;
         prods.forEach(p => { if(!p.oculto) { bodVal += (p.precio * p.cantidad); invVal += ((p.costo || 0) * p.cantidad); } });
 
@@ -390,7 +395,7 @@
         const html = `
             <div style="display: flex; flex-direction: column; gap: 12px; text-align: left; margin-top: 10px;">
                 <div><label style="font-size:0.9rem; font-weight:bold; color:var(--dark);">Nombre del Producto:</label>
-                <input type="text" id="mInN" placeholder="Ej: Gaseosa 400ml" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; outline:none;"></div>
+                <input type="text" id="mInN" autocomplete="off" placeholder="Ej: Gaseosa 400ml" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; outline:none;"></div>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <div><label style="font-size:0.9rem; font-weight:bold; color:var(--dark);">Categoría:</label>
@@ -399,7 +404,7 @@
                         <option value="Dulces">Dulces</option><option value="Aseo">Aseo</option><option value="Otros">Otros</option>
                     </select></div>
                     <div><label style="font-size:0.9rem; font-weight:bold; color:var(--dark);">Código/QR:</label>
-                    <input type="text" id="mInQR" placeholder="(Opcional)" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; outline:none;"></div>
+                    <input type="text" id="mInQR" autocomplete="off" placeholder="(Opcional)" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; outline:none;"></div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -441,9 +446,20 @@
     }
 
     const barraBuscador = document.getElementById('buscador');
-    barraBuscador.oninput = (e) => refrescarUI(e.target.value);
+    const btnLimpiar = document.getElementById('btnLimpiarBuscador');
+
+    function limpiarBuscador() {
+        barraBuscador.value = '';
+        btnLimpiar.style.display = 'none';
+        refrescarUI('');
+        enfocarBuscador();
+    }
+
+    barraBuscador.oninput = (e) => {
+        refrescarUI(e.target.value);
+        btnLimpiar.style.display = e.target.value.length > 0 ? 'block' : 'none';
+    };
     
-    // AQUI ESTA LA MEJORA: SE LIMPIA SIEMPRE DESPUÉS DE UN ENTER
     barraBuscador.onkeypress = (e) => {
         if (e.key === 'Enter') {
             const val = barraBuscador.value.trim();
@@ -470,8 +486,8 @@
                     }
                 }
                 
-                // Sin importar si encontró o no un producto por QR, limpiamos la barra.
                 barraBuscador.value = ''; 
+                btnLimpiar.style.display = 'none'; 
                 refrescarUI(''); 
                 enfocarBuscador();
             }
@@ -549,7 +565,7 @@
             <option value="T">📲 Transferencia</option>
             <option value="F">📒 Fiado (Crédito)</option>
         </select>
-        <input type="text" id="vCliente" placeholder="Nombre completo del cliente" style="display:none; width:100%; margin-top:10px; padding:15px; border-radius:10px; font-size:1rem; border:2px solid var(--info); outline:none;">
+        <input type="text" id="vCliente" autocomplete="off" placeholder="Nombre completo del cliente" style="display:none; width:100%; margin-top:10px; padding:15px; border-radius:10px; font-size:1rem; border:2px solid var(--info); outline:none;">
         `, () => {
             const m = document.getElementById('vPago').value; 
             if (m === "F") {
@@ -629,7 +645,7 @@
     }
 
     function verSugerenciaCompras() {
-        const criticos = prods.filter(p => p.cantidad < 5 && !p.oculto);
+        const criticos = prods.filter(p => p.cantidad < 3 && !p.oculto);
         if(criticos.length === 0) { showIgnition("Compras Inteligentes", "El inventario está sano. No hay sugerencias urgentes.", "", () => true); return; }
         
         const limite30Dias = Date.now() - (30 * 24 * 60 * 60 * 1000);
@@ -668,7 +684,7 @@
         <div style="background:#f4f4f4; padding:15px; border-radius:10px; text-align:center; border: 1px solid #ddd;">
             <p style="margin-top:0; font-size:0.9rem; font-weight:bold; color:var(--dark);">📲 Enviar pedido por WhatsApp</p>
             <div style="display:flex; gap:5px;">
-                <input type="number" id="numWA" placeholder="Ej: 3001234567" style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:1rem; outline:none;">
+                <input type="number" id="numWA" placeholder="Ej: 3001234567" autocomplete="off" style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:1rem; outline:none;">
                 <button id="btnSendWA" onclick="enviarWA()" style="background:#25D366; color:white; border:none; padding:10px 15px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:1.1rem; min-width:90px;">Enviar</button>
             </div>
             <small style="color:gray; display:block; margin-top:5px;">Abre WhatsApp para confirmar y enviar.</small>
@@ -728,7 +744,8 @@
         const rankingSorted = Object.entries(resumenVentas).sort((a,b) => b[1].cant - a[1].cant);
         document.getElementById('pdfRankingContenido').innerHTML = rankingSorted.length > 0 ? rankingSorted.slice(0, 3).map((item, index) => `<div class="ranking-item"><span>${["🥇","🥈","🥉"][index]} <b>${item[0]}</b></span> <span>${item[1].cant} unidades vendidas</span></div>`).join('') : '<p>Sin ranking.</p>';
         document.getElementById('pdfCuerpoVentas').innerHTML = Object.entries(resumenVentas).map(([n, d]) => `<tr><td>${n}</td><td>${d.cant} u.</td><td>${moneda(d.total)}</td><td style="color:var(--primary); font-weight:bold;">+${moneda(d.gananciaItem)}</td></tr>`).join('');
-        const alertas = prods.filter(p => p.cantidad < 5 && !p.oculto);
+        
+        const alertas = prods.filter(p => p.cantidad < 3 && !p.oculto);
         document.getElementById('pdfCuerpoAlertas').innerHTML = alertas.length > 0 ? alertas.map(p => `<tr><td>${p.nombre}</td><td>${p.cantidad} unidades.</td><td style="color:red; font-weight:bold;">${p.cantidad === 0 ? 'AGOTADO' : 'STOCK BAJO'}</td></tr>`).join('') : '<tr><td colspan="3" style="text-align:center;">Inventario OK.</td></tr>';
         showToast("Generando reporte PDF...", "success"); setTimeout(() => { window.print(); }, 800);
     }
@@ -813,7 +830,8 @@
         } else {
             document.getElementById('pdfRankingContenido').innerHTML = '<p style="color:gray; font-size:0.9rem; text-align:center;">Información detallada no guardada en cierres antiguos.</p>'; document.getElementById('pdfCuerpoVentas').innerHTML = '<tr><td colspan="4" style="text-align:center; color:gray;">Solo hay datos financieros.</td></tr>';
         }
-        const alertas = prods.filter(p => p.cantidad < 5 && !p.oculto);
+        
+        const alertas = prods.filter(p => p.cantidad < 3 && !p.oculto);
         document.getElementById('pdfCuerpoAlertas').innerHTML = alertas.length > 0 ? alertas.map(p => `<tr><td>${p.nombre}</td><td>${p.cantidad} unidades.</td><td style="color:red; font-weight:bold;">${p.cantidad === 0 ? 'AGOTADO' : 'STOCK BAJO'}</td></tr>`).join('') : '<tr><td colspan="3" style="text-align:center;">Inventario OK.</td></tr>';
         showToast("Generando reporte PDF...", "success"); setTimeout(() => { window.print(); }, 800);
     }
