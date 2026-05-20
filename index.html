@@ -11,15 +11,32 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
     <style>
-        :root { --primary: #2ecc71; --dark: #2c3e50; --danger: #e74c3c; --info: #3498db; --gray: #95a5a6; --transfer: #9b59b6; --warning: #f1c40f; --gold: #f39c12; }
+        :root { 
+            --primary: #2ecc71; --dark: #2c3e50; --danger: #e74c3c; --info: #3498db; --gray: #95a5a6; --transfer: #9b59b6; --warning: #f1c40f; --gold: #f39c12;
+            --bg-body: #f0f2f5; --bg-card: white; --text-main: #2c3e50; --border-input: #eee;
+        }
+        
+        body.dark-mode {
+            --bg-body: #12181f; --bg-card: #1e2630; --text-main: #f0f2f5; --border-input: #2d3846;
+            background-color: var(--bg-body); color: var(--text-main);
+        }
+        
         * { box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-body); margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; transition: background-color 0.3s; }
         
         body.rol-cajero .admin-only { display: none !important; }
 
-        /* SISTEMA DE NOTIFICACIONES TOAST */
+        body.dark-mode .col-izq, body.dark-mode .col-der, body.dark-mode .dashboard, body.dark-mode .dashboard-bodega, body.dark-mode .filtros-cat, body.dark-mode .modal-ign { background: var(--bg-card) !important; color: var(--text-main); }
+        body.dark-mode .producto-item { border-bottom-color: var(--border-input); }
+        body.dark-mode .fijo-inferior, body.dark-mode .footer-bolsa { background: #161c24 !important; border-top-color: var(--border-input); }
+        body.dark-mode .btn-cat { background: #161c24; border-color: var(--border-input); color: var(--text-main); }
+        body.dark-mode input[type="text"], body.dark-mode input[type="number"], body.dark-mode select { background: #161c24; color: white; border-color: var(--border-input); }
+        body.dark-mode .ticket-hist { background: #25303f; border-color: var(--gold); color: white; }
+        body.dark-mode .cierre-card { background: #161c24; border-color: var(--border-input); color: white; }
+        body.dark-mode .stock-ok { background: #1b4d32; color: #2ecc71; border-color: #2ecc71; }
+
         #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
-        .toast { background: var(--dark); color: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); font-size: 0.95rem; font-weight: bold; transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); display: flex; align-items: center; gap: 10px; min-width: 250px; }
+        .toast { background: #2c3e50; color: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); font-size: 0.95rem; font-weight: bold; transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); display: flex; align-items: center; gap: 10px; min-width: 250px; }
         .toast.show { transform: translateX(0); }
         .toast.success { border-left: 6px solid var(--primary); }
         .toast.error { border-left: 6px solid var(--danger); }
@@ -41,7 +58,7 @@
         .header { background: var(--primary); color: white; padding: 10px 15px; border-bottom: 4px solid #27ae60; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; flex-shrink: 0; }
         .header-titulo { font-weight: bold; font-size: 1.1rem; flex-grow: 1; text-align: center; order: 2; min-width: 150px; }
         .header-btns-izq { display: flex; gap: 12px; order: 1; }
-        .header-btns-der { display: flex; order: 3; }
+        .header-btns-der { display: flex; order: 3; align-items: center; gap: 12px; }
         .btn-head { background: none; border: none; color: white; cursor: pointer; font-size: 1.3rem; padding: 2px; transition: transform 0.2s; }
         .btn-head:hover { transform: scale(1.1); }
 
@@ -67,7 +84,7 @@
         input:focus, select:focus { border-color: var(--primary); }
 
         .area-lista { flex-grow: 1; overflow-y: auto; padding: 0 15px; }
-        .producto-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #f1f1f1; }
+        .producto-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--border-input); }
         
         .badge-stock { font-size: 1rem; padding: 5px 12px; border-radius: 20px; font-weight: 800; display: inline-block; min-width: 45px; text-align: center; }
         .stock-ok { background: #d5f5e3; color: #27ae60; border: 1px solid #27ae60; }
@@ -80,9 +97,9 @@
         .items-bolsa { flex-grow: 1; overflow-y: auto; padding: 15px; font-size: 0.95rem; }
         .footer-bolsa { padding: 15px; background: #f9f9f9; border-top: 1px solid #eee; flex-shrink: 0; }
         
-        /* Controles de Bolsa */
         .cart-item { display:flex; flex-direction:column; margin-bottom:12px; border-bottom:1px dashed #ddd; padding-bottom:10px; }
         .cart-qty-ctrl { display: flex; align-items: center; gap: 10px; background: #fff; padding: 3px; border-radius: 8px; border: 1px solid #eee; }
+        body.dark-mode .cart-qty-ctrl { background: #161c24; border-color: var(--border-input); }
         .btn-qty { background: var(--info); color: white; border: none; width: 28px; height: 28px; border-radius: 6px; font-weight: bold; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
         .btn-qty.btn-minus { background: #e74c3c; }
         .btn-qty:hover { filter: brightness(0.9); }
@@ -94,16 +111,44 @@
         .btn-icon { background: none; border: none; font-size: 1.1rem; cursor: pointer; padding: 5px; }
 
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
-        .modal-ign { background: white; width: 95%; max-width: 450px; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-        .modal-body { padding: 25px; text-align: center; max-height: 70vh; overflow-y: auto; }
+        .modal-ign { background: white; width: 95%; max-width: 530px; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); transition: max-width 0.2s; }
+        .modal-ign.wide-modal { max-width: 650px !important; }
+
+        .modal-body { padding: 22px; text-align: center; max-height: 92vh; overflow-y: auto; } 
         .modal-footer { display: flex; border-top: 1px solid #eee; }
+        body.dark-mode .modal-footer { border-top-color: var(--border-input); }
+        
         .btn-m { flex: 1; padding: 15px; border: none; background: #f9f9f9; cursor: pointer; font-weight: bold; font-size: 1rem; transition: background 0.2s; }
+        body.dark-mode .btn-m { background: #161c24; color: white; }
         .btn-m:hover { background: #eee; }
+        body.dark-mode .btn-m:hover { background: #25303f; }
         .btn-m-ok { color: white; background: var(--primary); border-left: 1px solid #27ae60; }
         .btn-m-ok:hover { background: #27ae60; }
         
+        .grid-cop { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; margin-bottom: 8px; }
+        .btn-cop { padding: 10px 4px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.85rem; font-weight: bold; cursor: pointer; background: white; color: #333; transition: all 0.15s; }
+        .btn-cop:hover { background: var(--info); color: white; border-color: var(--info); }
+        body.dark-mode .btn-cop { background: #25303f; color: white; border-color: var(--border-input); }
+        body.dark-mode .btn-cop:hover { background: var(--info); }
+        .btn-cop-clear { background: #e74c3c !important; color: white !important; border-color: #e74c3c !important; font-size: 1rem; padding: 6px 4px; }
+
         .ticket-hist { background: #fffdf5; border: 1px solid #f9e79f; border-radius: 12px; padding: 12px; margin-bottom: 10px; text-align: left; }
         .cierre-card { background: #f8f9fa; border-left: 5px solid var(--dark); padding: 10px; margin-bottom: 10px; text-align: left; border-radius: 8px; border: 1px solid #eee; }
+
+        /* ESTILOS DEL DASHBOARD DIDÁCTICO INTERACTIVO */
+        .didactic-dash { display: flex; flex-direction: column; gap: 14px; text-align: left; }
+        .didactic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .didactic-card { padding: 15px; border-radius: 14px; background: #fdfdfd; border: 1px solid #eef2f5; box-shadow: 0 4px 6px rgba(0,0,0,0.01); }
+        body.dark-mode .didactic-card { background: #161c24; border-color: #2d3846; }
+        .didactic-val { font-size: 1.4rem; font-weight: 800; display: block; margin-top: 5px; }
+        .didactic-bar-bg { width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; margin-top: 8px; overflow: hidden; }
+        body.dark-mode .didactic-bar-bg { background: #2d3846; }
+        .didactic-bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s cubic-bezier(0.1, 1, 0.1, 1); }
+        .didactic-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 5px; }
+        .didactic-table th { padding: 8px; text-align: left; border-bottom: 2px solid #e2e8f0; color: gray; }
+        body.dark-mode .didactic-table th { border-bottom-color: #2d3846; }
+        .didactic-table td { padding: 8px; border-bottom: 1px solid #f1f5f9; }
+        body.dark-mode .didactic-table td { border-bottom-color: #1e2630; }
 
         @media (max-width: 850px) {
             body { overflow-y: auto; height: auto; }
@@ -112,12 +157,10 @@
             .area-lista, .items-bolsa { height: 350px; }
         }
 
-        /* CONFIGURACIÓN DE IMPRESIÓN DINÁMICA (REPORTES Y CHECKLIST) */
         @media print {
             body { background: white !important; overflow: visible !important; height: auto; }
             .pantalla-principal, .overlay, #toast-container { display: none !important; }
             
-            /* Renderizado condicional según qué reporte se mande a imprimir */
             #reporte-pdf.print-active { display: block !important; padding: 0; }
             #checklist-pdf.print-active { display: block !important; padding: 0; }
 
@@ -129,7 +172,6 @@
             .pdf-table th { background: #f4f4f4 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 12px; text-align: left; border-bottom: 3px solid var(--primary); font-size: 11pt; color: #333; }
             .pdf-table td { padding: 12px; border-bottom: 1px solid #eee; font-size: 10.5pt; }
             
-            /* Estilos específicos para las líneas de la planilla de conteo físico */
             .linea-conteo { border-bottom: 1px dotted #999; display: inline-block; width: 50px; height: 15px; }
             .cuadro-check { border: 2px solid #555; display: inline-block; width: 18px; height: 18px; border-radius: 4px; }
 
@@ -162,7 +204,7 @@
 </div>
 
 <div class="overlay" id="ignModal">
-    <div class="modal-ign">
+    <div class="modal-ign" id="modalContainerBase">
         <div class="modal-body" id="mContent"></div>
         <div class="modal-footer" id="mFooter"></div>
     </div>
@@ -176,20 +218,22 @@
             <div class="header-btns-izq">
                 <button onclick="abrirModalNuevoProd()" class="btn-head admin-only" title="Registrar Nuevo Producto">📦</button>
                 <button onclick="generarChecklistFisico()" class="btn-head admin-only" title="Planilla de Conteo Físico">✅</button>
+                <button onclick="abrirModalRetiro()" class="btn-head" title="Registrar Salida / Retiro de Efectivo">💸</button>
                 <button onclick="verHistorialCierres()" class="btn-head admin-only" title="Resumen Rápido">📋</button>
-                <button onclick="abrirPanelReportes()" class="btn-head admin-only" title="Reportes Avanzados en PDF">📅</button>
+                <button onclick="abrirPanelReportes()" class="btn-head admin-only" title="Reportes Avanzados en Calendario">📅</button>
                 <button onclick="verSugerenciaCompras()" class="btn-head admin-only" title="Sugerencia de Compras API">💡</button>
                 <button onclick="verFiados()" class="btn-head" title="Cuentas por Cobrar (Fiados)">📒</button>
             </div>
             <div class="header-titulo">🏪 TIENDA JACKELINE <span id="nubeIndicador" class="cloud-status" title="Desconectado"></span></div>
             <div class="header-btns-der">
+                <button onclick="toggleDarkMode()" class="btn-head" title="Cambiar Tema (Modo Oscuro)">🌓</button>
                 <button onclick="verTodoHistorial()" class="btn-head" title="Ventas de Hoy">🕒</button>
                 <button onclick="cerrarSesion()" class="btn-head" title="Cerrar Sesión">🚪</button>
             </div>
         </div>
         
         <div class="dashboard">
-            <div class="stat-card bg-efe"><small>💵 EFECTIVO</small><span id="dEfe" class="stat-val">$0</span></div>
+            <div class="stat-card bg-efe" title="Dinero en caja física (Base + Ventas - Retiros)"><small>💵 EFECTIVO EN CAJA</small><span id="dEfe" class="stat-val">$0</span></div>
             <div class="stat-card bg-tra"><small>📲 TRANSFERENCIA</small><span id="dTra" class="stat-val">$0</span></div>
             <div class="stat-card" style="background:#e67e22;" title="Dinero que deben los clientes"><small>📒 POR COBRAR</small><span id="dFiado" class="stat-val">$0</span></div>
             <div class="stat-card" style="background:#34495e;" title="Total de ventas histórico (Efec + Trans + Fiados)"><small>💰 TOTAL VENTAS</small><span id="dTotalVentas" class="stat-val">$0</span></div>
@@ -221,7 +265,7 @@
 
         <div class="fijo-inferior">
             <div style="display:flex; gap:8px;">
-                <button onclick="generarReporte()" class="admin-only" style="flex:1; background:var(--info); color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:bold; transition: filter 0.2s;">📊 GENERAR REPORTE DIARIO</button>
+                <button onclick="generarReporteHoyInteractivo()" class="admin-only" style="flex:1; background:var(--info); color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:bold; transition: filter 0.2s;">📊 REPORTE DE HOY</button>
                 <button onclick="confirmarCaja()" style="flex:1; background:var(--danger); color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:bold; transition: filter 0.2s;">🔒 CERRAR VENTA DIARIA</button>
             </div>
         </div>
@@ -316,11 +360,21 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    let prods = []; let efe = 0; let tra = 0; let tickets = []; let cierresHistorial = []; let carrito = []; let fiados = [];
+    let prods = []; let efe = 0; let tra = 0; let base_caja = 0; let tickets = []; let cierresHistorial = []; let carrito = []; let fiados = [];
     let usandoNube = false; let categoriaActiva = ""; 
     let rolActual = localStorage.getItem("ign_rol") || null;
 
+    if (localStorage.getItem("ign_dark_mode") === "true") {
+        document.body.classList.add("dark-mode");
+    }
+
     const moneda = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n || 0);
+
+    function toggleDarkMode() {
+        document.body.classList.toggle("dark-mode");
+        localStorage.setItem("ign_dark_mode", document.body.classList.contains("dark-mode"));
+        showToast(document.body.classList.contains("dark-mode") ? "Modo Oscuro activado 🌙" : "Modo Claro activado ☀️");
+    }
 
     function showToast(msg, type = "success") {
         const container = document.getElementById("toast-container");
@@ -355,8 +409,75 @@
             document.getElementById('loginModal').style.display = 'none';
             if(rolActual === 'cajero') document.body.classList.add('rol-cajero');
             else document.body.classList.remove('rol-cajero');
-            setTimeout(enfocarBuscador, 500); 
+            
+            setTimeout(() => {
+                if(efe === 0 && tra === 0 && base_caja === 0 && tickets.length === 0) {
+                    abrirModalBaseCaja();
+                } else {
+                    enfocarBuscador();
+                }
+            }, 600); 
         }
+    }
+
+    function abrirModalBaseCaja() {
+        showIgnition("💰 Apertura de Caja Diaria", "Ingrese el dinero en efectivo asignado para dar cambio (Base):", `
+            <input type="number" id="vBaseCajaInput" value="50000" style="width:100%; padding:15px; font-size:1.5rem; text-align:center; border-radius:10px; border:2px solid var(--primary); outline:none; font-weight:bold; color:var(--primary);">
+        `, () => {
+            const val = parseInt(document.getElementById('vBaseCajaInput').value);
+            if (!isNaN(val) && val >= 0) {
+                base_caja = val;
+                guardarDatos();
+                showToast(`Base de caja establecida en: ${moneda(base_caja)}`);
+                return true;
+            }
+            showToast("Ingrese un monto válido.", "error");
+            return false;
+        });
+        setTimeout(() => { document.getElementById('vBaseCajaInput').focus(); document.getElementById('vBaseCajaInput').select(); }, 120);
+    }
+
+    function abrirModalRetiro() {
+        const efectivoDisponible = base_caja + efe;
+        showIgnition("💸 Registrar Retiro / Salida de Efectivo", `Efectivo actual en caja: <b style="color:var(--primary);">${moneda(efectivoDisponible)}</b>`, `
+            <div style="text-align:left; display:flex; flex-direction:column; gap:10px; margin-top:10px;">
+                <div>
+                    <label style="font-weight:bold; font-size:0.9rem;">Monto a Retirar ($):</label>
+                    <input type="number" id="vRetiroMonto" placeholder="Ej: 25000" style="width:100%; padding:12px; border-radius:8px; border:2px solid var(--danger); outline:none; font-size:1.1rem; font-weight:bold;">
+                </div>
+                <div>
+                    <label style="font-weight:bold; font-size:0.9rem;">Concepto o Descripción:</label>
+                    <input type="text" id="vRetiroConcepto" autocomplete="off" placeholder="Ej: Pago camión Postobón o bolsas" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ccc; outline:none;">
+                </div>
+            </div>
+        `, () => {
+            const monto = parseInt(document.getElementById('vRetiroMonto').value);
+            const concepto = document.getElementById('vRetiroConcepto').value.trim();
+
+            if (isNaN(monto) || monto <= 0 || !concepto) {
+                showToast("Debe llenar el monto y la descripción del retiro.", "error");
+                return false;
+            }
+            if (monto > efectivoDisponible) {
+                showToast("No puede retirar más dinero del disponible en caja.", "error");
+                return false;
+            }
+
+            efe -= monto; 
+            
+            tickets.push({ 
+                id: tickets.length + 1, 
+                h: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), 
+                m: "RETIRO / GASTO", 
+                tot: -monto, 
+                items: [{ n: `SALIDA: ${concepto}`, cant: 1, p: -monto, costo: 0 }] 
+            });
+
+            guardarDatos();
+            showToast(`Retiro de ${moneda(monto)} registrado con éxito.`);
+            return true;
+        });
+        setTimeout(() => { document.getElementById('vRetiroMonto').focus(); }, 120);
     }
     
     function iniciarSesion(rol) {
@@ -377,7 +498,7 @@
         document.getElementById("nubeIndicador").title = "Conectado a Firebase (Nube)";
         if (doc.exists) {
             const data = doc.data();
-            prods = data.prods || []; efe = data.efe || 0; tra = data.tra || 0; tickets = data.tickets || []; fiados = data.fiados || [];
+            prods = data.prods || []; efe = data.efe || 0; tra = data.tra || 0; base_caja = data.base_caja || 0; tickets = data.tickets || []; fiados = data.fiados || [];
             if (data.cierresHistorial) cierresHistorial = data.cierresHistorial;
             refrescarUI(document.getElementById('buscador').value);
         } else { cargarRespaldoLocal(); guardarDatos(); }
@@ -386,15 +507,15 @@
     db.collection("tienda").doc("historial_cierres").onSnapshot((doc) => { if(doc.exists && doc.data().cierresHistorial) { cierresHistorial = doc.data().cierresHistorial; } });
 
     function cargarRespaldoLocal() {
-        prods = JSON.parse(localStorage.getItem("ign_p")) || []; efe = parseFloat(localStorage.getItem("ign_e")) || 0; tra = parseFloat(localStorage.getItem("ign_t")) || 0; tickets = JSON.parse(localStorage.getItem("ign_tk")) || []; fiados = JSON.parse(localStorage.getItem("ign_f")) || []; cierresHistorial = JSON.parse(localStorage.getItem("ign_hist_cierres")) || [];
+        prods = JSON.parse(localStorage.getItem("ign_p")) || []; efe = parseFloat(localStorage.getItem("ign_e")) || 0; tra = parseFloat(localStorage.getItem("ign_t")) || 0; base_caja = parseFloat(localStorage.getItem("ign_base")) || 0; tickets = JSON.parse(localStorage.getItem("ign_tk")) || []; fiados = JSON.parse(localStorage.getItem("ign_f")) || []; cierresHistorial = JSON.parse(localStorage.getItem("ign_hist_cierres")) || [];
         refrescarUI(document.getElementById('buscador').value);
     }
 
     function guardarDatos() {
-        localStorage.setItem("ign_p", JSON.stringify(prods)); localStorage.setItem("ign_e", efe); localStorage.setItem("ign_t", tra); localStorage.setItem("ign_tk", JSON.stringify(tickets)); localStorage.setItem("ign_f", JSON.stringify(fiados)); localStorage.setItem("ign_hist_cierres", JSON.stringify(cierresHistorial));
+        localStorage.setItem("ign_p", JSON.stringify(prods)); localStorage.setItem("ign_e", efe); localStorage.setItem("ign_t", tra); localStorage.setItem("ign_base", base_caja); localStorage.setItem("ign_tk", JSON.stringify(tickets)); localStorage.setItem("ign_f", JSON.stringify(fiados)); localStorage.setItem("ign_hist_cierres", JSON.stringify(cierresHistorial));
         if (usandoNube) {
             document.getElementById("nubeIndicador").className = "cloud-status cloud-syncing";
-            db.collection("tienda").doc("estado_actual").set({ prods, efe, tra, tickets, fiados })
+            db.collection("tienda").doc("estado_actual").set({ prods, efe, tra, base_caja, tickets, fiados })
             .then(() => { db.collection("tienda").doc("historial_cierres").set({ cierresHistorial }); document.getElementById("nubeIndicador").className = "cloud-status cloud-online"; })
             .catch((err) => console.error(err));
         } else { refrescarUI(document.getElementById('buscador').value); }
@@ -403,9 +524,22 @@
     function setFiltroCat(cat, btn) { categoriaActiva = cat; document.querySelectorAll('.btn-cat').forEach(b => b.classList.remove('active')); btn.classList.add('active'); refrescarUI(document.getElementById('buscador').value); }
 
     function refrescarUI(f = "") {
-        const list = document.getElementById('lista'); list.innerHTML = ""; let bodVal = 0, invVal = 0, gananciaHoyVal = 0, totalFiados = 0;
+        const list = document.getElementById('lista'); 
+        list.innerHTML = ""; 
+        let bodVal = 0, invVal = 0, gananciaHoyVal = 0, totalFiados = 0;
         
-        tickets.forEach(tk => { tk.items.forEach(i => { const pRef = prods.find(x => x.nombre === i.n); let costoBase = pRef ? (pRef.costo || 0) : 0; gananciaHoyVal += (i.p - costoBase) * i.cant; }); });
+        // CÁLCULO BLINDADO (Ignora retiros y evita negativos)
+        tickets.forEach(tk => { 
+            if (tk.tot > 0) {
+                tk.items.forEach(i => { 
+                    const pRef = prods.find(x => x.nombre === i.n); 
+                    let costoBase = pRef ? (parseFloat(pRef.costo) || 0) : 0; 
+                    let precioVenta = parseFloat(i.p) || 0;
+                    gananciaHoyVal += Math.max(0, (precioVenta - costoBase) * i.cant); 
+                }); 
+            }
+        });
+        
         fiados.forEach(f => { totalFiados += f.tot; });
 
         const prodsVisuales = prods.slice().sort((a, b) => (a.oculto === b.oculto) ? 0 : a.oculto ? 1 : -1);
@@ -423,88 +557,46 @@
                 const div = document.createElement('div'); div.className = `producto-item ${p.oculto ? 'producto-oculto' : ''}`;
                 
                 div.innerHTML = `<div style="flex:1"><strong>${p.nombre}</strong> <span style="font-size:0.7rem; color:gray;">[${p.cat || 'Otros'}]</span><br><small>Costo: ${moneda(p.costo || 0)} | Venta: ${moneda(p.precio)}</small><br><span class="badge-stock ${bClase}" style="margin-top:4px;">${p.cantidad} unidades.</span></div>
-                    <div style="display:flex; align-items:center;">
-                        ${!p.oculto 
-                            ? `<button onclick="abrirVentaCant('${p.nombre}')" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; font-weight:bold; cursor:pointer;">+ Añadir</button>
-                               <button class="btn-icon admin-only" onclick="modalEditar('${p.nombre}')" style="margin-left:5px" title="Editar">✏️</button>
-                               <button class="btn-icon admin-only" onclick="cambiarEstado('${p.nombre}', true)" title="Ocultar">👁️‍🗨️</button>` 
-                            : `<button onclick="modalSurtir('${p.nombre}')" style="background:var(--info); color:white; border:none; padding:10px 15px; border-radius:10px; font-weight:bold; cursor:pointer;" title="Ingresar stock para activar">📦 Surtir y Activar</button>
-                               <button class="btn-icon admin-only" onclick="modalEditar('${p.nombre}')" style="margin-left:5px" title="Editar">✏️</button>`
-                        }
-                    </div>`;
+                                    <div style="display:flex; align-items:center;">
+                                        ${!p.oculto 
+                                            ? `<button onclick="abrirVentaCant('${p.nombre}')" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; font-weight:bold; cursor:pointer;">+ Añadir</button>
+                                               <button class="btn-icon admin-only" onclick="modalEditar('${p.nombre}')" style="margin-left:5px" title="Editar">✏️</button>
+                                               <button class="btn-icon admin-only" onclick="cambiarEstado('${p.nombre}', true)" title="Ocultar">👁️‍🗨️</button>` 
+                                            : `<button onclick="modalSurtir('${p.nombre}')" style="background:var(--info); color:white; border:none; padding:10px 15px; border-radius:10px; font-weight:bold; cursor:pointer;" title="Ingresar stock para activar">📦 Surtir y Activar</button>
+                                               <button class="btn-icon admin-only" onclick="modalEditar('${p.nombre}')" style="margin-left:5px" title="Editar">✏️</button>`
+                                        }
+                                    </div>`;
                 list.appendChild(div);
             }
         });
         
+        // CÁLCULOS FINALES Y ACTUALIZACIÓN DE INTERFAZ
         bodVal = 0; invVal = 0;
         prods.forEach(p => { if(!p.oculto) { bodVal += (p.precio * p.cantidad); invVal += ((p.costo || 0) * p.cantidad); } });
 
-        let totalVentasHistorial = efe + tra + totalFiados;
+        let totalVentasHistorial = 0;
+        tickets.forEach(tk => { if(tk.tot > 0) totalVentasHistorial += tk.tot; });
+        totalVentasHistorial += totalFiados;
 
-        document.getElementById('dEfe').innerText = moneda(efe); 
-        document.getElementById('dTra').innerText = moneda(tra); 
+        // PROTECCIÓN CONTRA NEGATIVOS EN LOS APARTADOS DE CAJA
+        document.getElementById('dEfe').innerText = moneda(Math.max(0, base_caja + efe)); 
+        document.getElementById('dTra').innerText = moneda(Math.max(0, tra)); 
         document.getElementById('dFiado').innerText = moneda(totalFiados); 
         document.getElementById('dTotalVentas').innerText = moneda(totalVentasHistorial); 
         
         document.getElementById('dBod').innerText = moneda(bodVal); 
         document.getElementById('dInv').innerText = moneda(invVal); 
-        document.getElementById('dGan').innerText = moneda(bodVal - invVal); 
+        
+        // DEBUG: Vamos a ver qué está pasando con tu inventario
+        let productosProblematicos = prods.filter(p => (p.costo || 0) > p.precio);
+        if (productosProblematicos.length > 0) {
+            console.log("¡CUIDADO! Estos productos tienen costo mayor al precio de venta:", productosProblematicos);
+        }
+        console.log("Cálculo actual: BodVal=" + bodVal + " InvVal=" + invVal);
+
+        document.getElementById('dGan').innerText = moneda(Math.max(0, bodVal - invVal)); 
         document.getElementById('dGanHoy').innerText = moneda(gananciaHoyVal);
         refrescarCarritoUI();
-    }
-
-    function abrirModalNuevoProd() {
-        const html = `
-            <div style="display: flex; flex-direction: column; gap: 12px; text-align: left; margin-top: 10px;">
-                <div><label style="font-size:0.9rem; font-weight:bold; color:var(--dark);">Nombre del Producto:</label>
-                <input type="text" id="mInN" autocomplete="off" placeholder="Ej: Gaseosa 400ml" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; outline:none;"></div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div><label style="font-size:0.9rem; font-weight:bold; color:var(--dark);">Categoría:</label>
-                    <select id="mInCat" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; outline:none;">
-                        <option value="Bebidas">Bebidas</option><option value="Paquetes">Paquetes</option>
-                        <option value="Dulces">Dulces</option><option value="Aseo">Aseo</option><option value="Otros">Otros</option>
-                    </select></div>
-                    <div><label style="font-size:0.9rem; font-weight:bold; color:var(--dark);">Código/QR:</label>
-                    <input type="text" id="mInQR" autocomplete="off" placeholder="(Opcional)" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; outline:none;"></div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div><label style="font-size:0.9rem; font-weight:bold; color:var(--dark);">Costo ($):</label>
-                    <input type="number" id="mInCosto" placeholder="¿A cómo lo compras?" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; outline:none;"></div>
-                    <div><label style="font-size:0.9rem; font-weight:bold; color:var(--dark);">Venta ($):</label>
-                    <input type="number" id="mInP" placeholder="¿A cómo lo vendes?" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; outline:none;"></div>
-                </div>
-
-                <div><label style="font-size:0.9rem; font-weight:bold; color:var(--dark);">Cantidad Inicial en Bodega:</label>
-                <input type="number" id="mInC" placeholder="Unidades actuales" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; outline:none;"></div>
-            </div>
-        `;
-
-        showIgnition("📦 Registrar Nuevo Producto", "", html, () => {
-            const n = document.getElementById('mInN').value.trim();
-            const cat = document.getElementById('mInCat').value;
-            const qr = document.getElementById('mInQR').value.trim();
-            const costo = parseInt(document.getElementById('mInCosto').value) || 0;
-            const p = parseInt(document.getElementById('mInP').value);
-            const c = parseInt(document.getElementById('mInC').value);
-
-            if(!n || isNaN(p) || isNaN(c)) { showToast("Debe llenar nombre, precio y cantidad.", "error"); return false; }
-            
-            const existe = prods.find(x => x.nombre.toLowerCase() === n.toLowerCase());
-            if(existe) { 
-                existe.cantidad += c; existe.oculto = false; guardarDatos(); 
-                showToast(`Producto existente. Se sumaron ${c} unidades.`, "warning"); 
-                return true; 
-            }
-            
-            prods.push({nombre: n, cat: cat, qr: qr, costo: costo, precio: p, cantidad: c, oculto: (c === 0)});
-            guardarDatos();
-            showToast(`Producto "${n}" registrado con éxito.`);
-            return true;
-        });
-
-        setTimeout(() => { document.getElementById('mInN').focus(); }, 100);
     }
 
     const barraBuscador = document.getElementById('buscador');
@@ -528,30 +620,35 @@
             if (val) {
                 const prod = prods.find(x => x.qr === val);
                 if (prod) {
-                    if (prod.oculto) {
-                        if(rolActual === 'admin') {
-                            showToast(`El producto "${prod.nombre}" está oculto. Usa el botón "Surtir y Activar".`, "warning");
-                        } else {
+                    if (rolActual === 'admin') {
+                        barraBuscador.value = ''; 
+                        btnLimpiar.style.display = 'none'; 
+                        refrescarUI(''); 
+                        modalSurtir(prod.nombre); 
+                    } 
+                    else {
+                        if (prod.oculto) {
                             showToast(`Producto no disponible.`, "error");
-                        }
-                    } else if (prod.cantidad <= 0) {
-                        showToast(`El producto "${prod.nombre}" está agotado.`, "error");
-                    } else {
-                        const yaEn = carrito.find(x => x.n === prod.nombre);
-                        if (yaEn) { 
-                            if (yaEn.cant < prod.cantidad) yaEn.cant += 1; 
-                            else showToast(`Stock máximo alcanzado para ${prod.nombre}`, "warning"); 
+                        } else if (prod.cantidad <= 0) {
+                            showToast(`El producto "${prod.nombre}" está agotado.`, "error");
                         } else {
-                            carrito.push({ n: prod.nombre, p: prod.precio, cant: 1 });
+                            const yaEn = carrito.find(x => x.n === prod.nombre);
+                            if (yaEn) { 
+                                if (yaEn.cant < prod.cantidad) yaEn.cant += 1; 
+                                else showToast(`Stock máximo alcanzado para ${prod.nombre}`, "warning"); 
+                            } else {
+                                carrito.push({ n: prod.nombre, p: prod.precio, cant: 1 });
+                            }
+                            refrescarCarritoUI();
                         }
-                        refrescarCarritoUI();
+                        barraBuscador.value = ''; 
+                        btnLimpiar.style.display = 'none'; 
+                        refrescarUI(''); 
+                        enfocarBuscador();
                     }
+                } else {
+                    showToast("El código de barras no coincide con ningún producto.", "error");
                 }
-                
-                barraBuscador.value = ''; 
-                btnLimpiar.style.display = 'none'; 
-                refrescarUI(''); 
-                enfocarBuscador();
             }
         }
     };
@@ -593,7 +690,7 @@
             return `
             <div class="cart-item">
                 <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                    <span style="font-weight:bold; font-size:1rem; color:var(--dark);">${i.n}</span>
+                    <span style="font-weight:bold; font-size:1rem;">${i.n}</span>
                     <span style="font-weight:bold; color:var(--primary);">${moneda(i.p * i.cant)}</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -635,6 +732,23 @@
         }
     }
 
+    function agregarEfectivoCOP(valor, total) {
+        const input = document.getElementById('vRecibido');
+        if(input) {
+            let actual = parseFloat(input.value) || 0;
+            input.value = actual + valor;
+            calcularCambio(total);
+        }
+    }
+
+    function limpiarEfectivoCOP(total) {
+        const input = document.getElementById('vRecibido');
+        if(input) {
+            input.value = '';
+            calcularCambio(total);
+        }
+    }
+
     function modalFinalizar() {
         let total = 0; carrito.forEach(i => total += (i.p * i.cant));
         showIgnition("Método de Pago", `Total a cobrar: <strong style="color:var(--primary); font-size:1.4rem;">${moneda(total)}</strong>`, `
@@ -644,10 +758,26 @@
             <option value="F">📒 Fiado (Crédito)</option>
         </select>
         
-        <div id="areaEfectivo" style="background:#f4f4f4; padding:15px; border-radius:10px; border:1px solid #ddd; text-align:left;">
-            <label style="font-size:0.9rem; font-weight:bold; color:var(--dark);">¿Con cuánto paga? (Opcional):</label>
-            <input type="number" id="vRecibido" autocomplete="off" placeholder="Ej: 50000" onkeyup="calcularCambio(${total})" style="width:100%; padding:12px; margin-top:5px; border-radius:8px; border:2px solid var(--info); font-size:1.1rem; outline:none; text-align:center;">
-            <div id="vCambioRes" style="margin-top:10px; text-align:center; min-height: 25px;"></div>
+        <div id="areaEfectivo" style="background:rgba(0,0,0,0.03); padding:12px; border-radius:10px; border:1px solid var(--border-input); text-align:left;">
+            <label style="font-size:0.9rem; font-weight:bold;">¿Con cuánto paga? (Opcional):</label>
+            <input type="number" id="vRecibido" autocomplete="off" placeholder="Ej: 50000" onkeyup="calcularCambio(${total})" style="width:100%; padding:10px; margin-top:5px; border-radius:8px; border:2px solid var(--info); font-size:1.1rem; outline:none; text-align:center;">
+            
+            <div class="grid-cop">
+                <button type="button" class="btn-cop" onclick="agregarEfectivoCOP(100000, ${total})">$100k</button>
+                <button type="button" class="btn-cop" onclick="agregarEfectivoCOP(50000, ${total})">$50k</button>
+                <button type="button" class="btn-cop" onclick="agregarEfectivoCOP(20000, ${total})">$20k</button>
+                <button type="button" class="btn-cop" onclick="agregarEfectivoCOP(10000, ${total})">$10k</button>
+                <button type="button" class="btn-cop" onclick="agregarEfectivoCOP(5000, ${total})">$5k</button>
+                <button type="button" class="btn-cop" onclick="agregarEfectivoCOP(2000, ${total})">$2k</button>
+                <button type="button" class="btn-cop" onclick="agregarEfectivoCOP(1000, ${total})">$1.000</button>
+                <button type="button" class="btn-cop" onclick="agregarEfectivoCOP(500, ${total})">$500</button>
+                <button type="button" class="btn-cop" onclick="agregarEfectivoCOP(200, ${total})">$200</button>
+                <button type="button" class="btn-cop" onclick="agregarEfectivoCOP(100, ${total})">$100</button>
+                <button type="button" class="btn-cop" onclick="agregarEfectivoCOP(50, ${total})">$50</button>
+                <button type="button" class="btn-cop btn-cop-clear" onclick="limpiarEfectivoCOP(${total})" title="Limpiar valor">🧹</button>
+            </div>
+
+            <div id="vCambioRes" style="margin-top:5px; text-align:center; min-height: 25px;"></div>
         </div>
 
         <input type="text" id="vCliente" autocomplete="off" placeholder="Nombre completo del cliente" style="display:none; width:100%; margin-top:10px; padding:15px; border-radius:10px; font-size:1rem; border:2px solid var(--info); outline:none;">
@@ -672,18 +802,52 @@
         setTimeout(() => { const vR = document.getElementById('vRecibido'); if(vR) vR.focus(); }, 100);
     }
 
+    function abrirModalNuevoProd() {
+        const html = `
+            <div style="display: flex; flex-direction: column; gap: 12px; text-align: left; margin-top: 10px;">
+                <div><label style="font-size:0.9rem; font-weight:bold;">Nombre del Producto:</label>
+                <input type="text" id="mInN" autocomplete="off" placeholder="Ej: Gaseosa 400ml" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border-input); outline:none;"></div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div><label style="font-size:0.9rem; font-weight:bold;">Categoría:</label>
+                    <select id="mInCat" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border-input); outline:none;">
+                        <option value="Bebidas">Bebidas</option><option value="Paquetes">Paquetes</option>
+                        <option value="Dulces">Dulces</option><option value="Aseo">Aseo</option><option value="Otros">Otros</option>
+                    </select></div>
+                    <div><label style="font-size:0.9rem; font-weight:bold;">Código/QR:</label>
+                    <input type="text" id="mInQR" autocomplete="off" placeholder="(Opcional)" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border-input); outline:none;"></div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div><label style="font-size:0.9rem; font-weight:bold;">Costo ($):</label>
+                    <input type="number" id="mInCosto" placeholder="¿A cómo lo compras?" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border-input); outline:none;"></div>
+                    <div><label style="font-size:0.9rem; font-weight:bold;">Venta ($):</label>
+                    <input type="number" id="mInP" placeholder="¿A cómo lo vendes?" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border-input); outline:none;"></div>
+                </div>
+                <div><label style="font-size:0.9rem; font-weight:bold;">Cantidad Inicial en Bodega:</label>
+                <input type="number" id="mInC" placeholder="Unidades actuales" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border-input); outline:none;"></div>
+            </div>`;
+        showIgnition("📦 Registrar Nuevo Producto", "", html, () => {
+            const n = document.getElementById('mInN').value.trim(); const cat = document.getElementById('mInCat').value; const qr = document.getElementById('mInQR').value.trim(); const costo = parseInt(document.getElementById('mInCosto').value) || 0; const p = parseInt(document.getElementById('mInP').value); const c = parseInt(document.getElementById('mInC').value);
+            if(!n || isNaN(p) || isNaN(c)) { showToast("Debe llenar nombre, precio y cantidad.", "error"); return false; }
+            const existe = prods.find(x => x.nombre.toLowerCase() === n.toLowerCase());
+            if(existe) { existe.cantidad += c; existe.oculto = false; guardarDatos(); showToast("Producto existente. Se sumaron unidades.", "warning"); return true; }
+            prods.push({nombre: n, cat: cat, qr: qr, costo: costo, precio: p, cantidad: c, oculto: (c === 0)});
+            guardarDatos(); showToast("Producto registrado con éxito."); return true;
+        });
+        setTimeout(() => { document.getElementById('mInN').focus(); }, 100);
+    }
+
+    // LISTAR FIADOS CORREGIDO AL 100%
     function verFiados() {
         if(fiados.length === 0) { showIgnition("Cuentas por Cobrar", "¡Todo al día! No hay fiados activos.", "", () => true); return; }
         let html = fiados.map(f => `
             <div class="cierre-card" style="display:flex; justify-content:space-between; align-items:center; border-left-color:#e67e22; margin-bottom:10px;">
                 <div style="text-align:left; max-width:65%;">
-                    <b style="font-size:1.1rem; color:var(--dark);">👤 ${f.cliente}</b><br>
+                    <b style="font-size:1.1rem; color:var(--text-main);">👤 ${f.cliente}</b><br>
                     <small style="color:gray;">📅 ${f.fecha} - ${f.items.length} producto(s)</small><br>
                     <strong style="color:var(--danger); font-size:1.1rem;">${moneda(f.tot)}</strong>
                 </div>
                 <button onclick="pagarFiado(${f.id})" style="background:var(--info); color:white; border:none; padding:10px 15px; border-radius:8px; cursor:pointer; font-weight:bold; transition: filter 0.2s;">Cobrar</button>
-            </div>
-        `).join('');
+            </div>`).join('');
         showIgnition("Cuentas por Cobrar (Fiados)", "Lista de saldos pendientes:", `<div style="max-height: 45vh; overflow-y:auto; padding-right:5px;">${html}</div>`, () => true);
     }
 
@@ -692,90 +856,42 @@
         if(idx > -1) {
             const f = fiados[idx];
             showIgnition("Recibir Pago / Abono", `Deuda total de <b>${f.cliente}</b>: <br><strong style="color:var(--danger); font-size:1.4rem;">${moneda(f.tot)}</strong>`, `
-            <div style="text-align:left; margin-top:15px; background:#f9f9f9; padding:15px; border-radius:10px; border:1px solid #eee;">
-                <label style="font-weight:bold; color:var(--dark); display:block; margin-bottom:5px;">Monto a Pagar o Abonar ($):</label>
+            <div style="text-align:left; margin-top:15px; background:rgba(0,0,0,0.02); padding:15px; border-radius:10px; border:1px solid var(--border-input);">
+                <label style="font-weight:bold; display:block; margin-bottom:5px;">Monto a Pagar o Abonar ($):</label>
                 <input type="number" id="vAbono" value="${f.tot}" max="${f.tot}" min="1" style="width:100%; padding:15px; font-size:1.3rem; text-align:center; border-radius:8px; border:2px solid var(--primary); outline:none; font-weight:bold; color:var(--primary); margin-bottom:15px;">
-                
-                <label style="font-weight:bold; color:var(--dark); display:block; margin-bottom:5px;">Método de Ingreso:</label>
+                <label style="font-weight:bold; display:block; margin-bottom:5px;">Método de Ingreso:</label>
                 <select id="vPagoFiado" style="width:100%; padding:12px; font-size:1.1rem; border-radius:8px; border:1px solid #ccc; outline:none;">
                     <option value="E">💵 Efectivo</option>
                     <option value="T">📲 Transferencia</option>
                 </select>
-            </div>
-            `, () => {
-                const m = document.getElementById('vPagoFiado').value;
-                const abono = parseInt(document.getElementById('vAbono').value) || 0;
-                
+            </div>`, () => {
+                const m = document.getElementById('vPagoFiado').value; const abono = parseInt(document.getElementById('vAbono').value) || 0;
                 if(abono <= 0 || abono > f.tot) { showToast("El monto ingresado no es válido.", "error"); return false; }
-
                 const mTxt = m === "E" ? "Abono Fiado (Efec)" : "Abono Fiado (Trans)";
-                
                 if (m === "E") efe += abono; else tra += abono;
-                
                 tickets.push({ id: tickets.length + 1, h: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), m: mTxt, tot: abono, items: [{n: `Abono de Deuda (${f.cliente})`, cant: 1, p: abono, costo:0}] });
-                
                 f.tot -= abono; 
-                
-                if(f.tot <= 0) {
-                    fiados.splice(idx, 1); 
-                    showToast(`¡Deuda de ${f.cliente} liquidada!`);
-                } else {
-                    showToast(`Abono registrado. Saldo restante: ${moneda(f.tot)}`, "success");
-                }
-                
-                guardarDatos(); 
-                setTimeout(() => verFiados(), 350); 
-                return true; 
+                if(f.tot <= 0) { fiados.splice(idx, 1); showToast(`¡Deuda de ${f.cliente} liquidada!`); } else { showToast(`Abono registrado. Saldo restante: ${moneda(f.tot)}`, "success"); }
+                guardarDatos(); setTimeout(() => verFiados(), 350); return true; 
             });
             setTimeout(() => { document.getElementById('vAbono').focus(); document.getElementById('vAbono').select(); }, 100);
         }
     }
 
     function verSugerenciaCompras() {
-        const criticos = prods.filter(p => p.cantidad < 3 && !p.oculto);
+        const criticos = prods.filter(p => (p.cantidad < 3 && !p.oculto) || (p.cantidad === 0));
+        
         if(criticos.length === 0) { showIgnition("Compras Inteligentes", "El inventario está sano. No hay sugerencias urgentes.", "", () => true); return; }
-        
-        const limite30Dias = Date.now() - (30 * 24 * 60 * 60 * 1000);
-        const ventasMes = {};
-        
-        cierresHistorial.forEach(c => {
-            if(c.timestamp >= limite30Dias && c.tickets_cierre) {
-                c.tickets_cierre.forEach(tk => {
-                    tk.items.forEach(item => { let n = item.n, cant = item.cant || item.c || 0; ventasMes[n] = (ventasMes[n] || 0) + cant; });
-                });
-            }
-        });
-
-        let html = `<table style="width:100%; text-align:left; border-collapse:collapse; margin-bottom:15px; font-size:0.9rem;">
-            <tr style="background:#eee;"><th>Producto</th><th>Stock</th><th title="Cantidades editables">Pedir</th><th>Inversión</th></tr>`;
-            
+        const limite30Dias = Date.now() - (30 * 24 * 60 * 60 * 1000); const ventasMes = {};
+        cierresHistorial.forEach(c => { if(c.timestamp >= limite30Dias && c.tickets_cierre) { c.tickets_cierre.forEach(tk => { tk.items.forEach(item => { let n = item.n, cant = item.cant || item.c || 0; ventasMes[n] = (ventasMes[n] || 0) + cant; }); }); } });
+        let html = `<table style="width:100%; text-align:left; border-collapse:collapse; margin-bottom:15px; font-size:0.9rem;"><tr style="background:rgba(0,0,0,0.05);"><th>Producto</th><th>Stock</th><th title="Cantidades editables">Pedir</th><th>Inversión</th></tr>`;
         criticos.forEach(p => {
             let historico = ventasMes[p.nombre] || 0; let aComprar = 0;
             if(historico > 5) { aComprar = Math.ceil(historico * 1.2) - p.cantidad; } else { aComprar = 15 - p.cantidad; }
-            if(aComprar <= 0) aComprar = 10; 
-            
-            let idFila = p.nombre.replace(/[^a-zA-Z0-9]/g, '');
-
-            html += `<tr>
-                <td style="padding:5px; border-bottom:1px solid #eee;">${p.nombre}</td>
-                <td style="padding:5px; border-bottom:1px solid #eee; color:red; font-weight:bold;">${p.cantidad}</td>
-                <td style="padding:5px; border-bottom:1px solid #eee;">
-                    <input type="number" class="input-sug" data-nombre="${p.nombre}" data-costo="${p.costo || 0}" value="${aComprar}" min="0" onchange="actualizarCalculoSugerido()" onkeyup="actualizarCalculoSugerido()" style="width:60px; padding:5px; border-radius:5px; border:1px solid #ccc; font-weight:bold; color:var(--info); text-align:center; outline:none;">
-                </td>
-                <td style="padding:5px; border-bottom:1px solid #eee;" id="subtot_${idFila}">$0</td>
-            </tr>`;
+            if(aComprar <= 0) aComprar = 10; let idFila = p.nombre.replace(/[^a-zA-Z0-9]/g, '');
+            html += `<tr><td>${p.nombre}</td><td style="color:red; font-weight:bold;">${p.cantidad}</td><td><input type="number" class="input-sug" data-nombre="${p.nombre}" data-costo="${p.costo || 0}" value="${aComprar}" min="0" onchange="actualizarCalculoSugerido()" onkeyup="actualizarCalculoSugerido()" style="width:60px; padding:5px; border-radius:5px; border:1px solid #ccc; font-weight:bold; color:var(--info); text-align:center; outline:none;"></td><td id="subtot_${idFila}">$0</td></tr>`;
         });
-        
-        html += `</table>
-        <div style="text-align:right; font-size:1.1rem; font-weight:bold; color:var(--dark); margin-bottom: 15px;">Costo Estimado: <span id="totalSugerencia">$0</span></div>
-        <div style="background:#f4f4f4; padding:15px; border-radius:10px; text-align:center; border: 1px solid #ddd;">
-            <p style="margin-top:0; font-size:0.9rem; font-weight:bold; color:var(--dark);">📲 Enviar pedido por WhatsApp</p>
-            <div style="display:flex; gap:5px;">
-                <input type="number" id="numWA" placeholder="Ej: 3001234567" autocomplete="off" style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:1rem; outline:none;">
-                <button id="btnSendWA" onclick="enviarWA()" style="background:#25D366; color:white; border:none; padding:10px 15px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:1.1rem; min-width:90px;">Enviar</button>
-            </div>
-            <small style="color:gray; display:block; margin-top:5px;">Abre WhatsApp para confirmar y enviar.</small>
-        </div>`;
+        html += `</table><div style="text-align:right; font-size:1.1rem; font-weight:bold; margin-bottom: 15px;">Costo Estimado: <span id="totalSugerencia">$0</span></div><div style="background:rgba(0,0,0,0.02); padding:15px; border-radius:10px; text-align:center; border: 1px solid var(--border-input);"><p style="margin-top:0; font-size:0.9rem; font-weight:bold;">📲 Enviar pedido por WhatsApp</p><div style="display:flex; gap:5px;"><input type="number" id="numWA" placeholder="Ej: 3001234567" autocomplete="off" style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:1rem; outline:none;"><button id="btnSendWA" onclick="enviarWA()" style="background:#25D366; color:white; border:none; padding:10px 15px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:1.1rem; min-width:90px;">Enviar</button></div></div>`;
         showIgnition("Sugerencia de Compras 💡", "Edita las cantidades sugeridas según tu presupuesto:", html, () => true);
         setTimeout(actualizarCalculoSugerido, 50);
     }
@@ -783,106 +899,113 @@
     function actualizarCalculoSugerido() {
         let total = 0; 
         document.querySelectorAll('.input-sug').forEach(inp => {
-            let cant = parseInt(inp.value) || 0; 
-            let costoBase = parseFloat(inp.dataset.costo) || 0;
-            let subtotal = cant * costoBase; 
-            total += subtotal; 
-            let idFila = inp.dataset.nombre.replace(/[^a-zA-Z0-9]/g, '');
-            document.getElementById(`subtot_${idFila}`).innerText = moneda(subtotal);
+            let cant = parseInt(inp.value) || 0; let costoBase = parseFloat(inp.dataset.costo) || 0; let subtotal = cant * costoBase; total += subtotal; let idFila = inp.dataset.nombre.replace(/[^a-zA-Z0-9]/g, ''); document.getElementById(`subtot_${idFila}`).innerText = moneda(subtotal);
         });
         document.getElementById('totalSugerencia').innerText = moneda(total);
     }
 
     function enviarWA() { 
-        const num = document.getElementById('numWA').value.trim(); 
-        if(!num) { showToast("Falta el teléfono", "error"); return; } 
-
-        let total = 0;
-        let urlText = "%F0%9F%93%8B *LISTA DE COMPRAS - TIENDA JACKELINE* %F0%9F%93%8B%0A%0A";
-
+        const num = document.getElementById('numWA').value.trim(); if(!num) { showToast("Falta el teléfono", "error"); return; } 
+        let total = 0; let urlText = "%F0%9F%93%8B *LISTA DE COMPRAS - TIENDA JACKELINE* %F0%9F%93%8B%0A%0A";
         document.querySelectorAll('.input-sug').forEach(inp => {
-            let cant = parseInt(inp.value) || 0;
-            let nombre = inp.dataset.nombre;
-            let costoBase = parseFloat(inp.dataset.costo) || 0;
-            let subtotal = cant * costoBase;
-
-            if(cant > 0) {
-                total += subtotal;
-                urlText += "%F0%9F%9B%92 " + encodeURIComponent(nombre) + ": " + cant + " und. (" + encodeURIComponent(moneda(subtotal)) + ")%0A";
-            }
+            let cant = parseInt(inp.value) || 0; let nombre = inp.dataset.nombre; let costoBase = parseFloat(inp.dataset.costo) || 0; let subtotal = cant * costoBase;
+            if(cant > 0) { total += subtotal; urlText += "%F0%9F%9B%92 " + encodeURIComponent(nombre) + ": " + cant + " und. (" + encodeURIComponent(moneda(subtotal)) + ")%0A"; }
         });
-
         urlText += "%0A%F0%9F%92%B0 *Total Inversión Estimada:* " + encodeURIComponent(moneda(total));
         window.open(`https://api.whatsapp.com/send?phone=57${num}&text=${urlText}`, '_blank'); 
     }
 
     function generarReporte() {
         if(tickets.length === 0 && efe === 0 && tra === 0) { showToast("No hay transacciones hoy.", "warning"); return; }
-        
-        // MODIFICADO: Switch de clases de impresión activas para evitar colisiones
-        document.getElementById('checklist-pdf').classList.remove('print-active');
-        document.getElementById('reporte-pdf').classList.add('print-active');
-
+        document.getElementById('checklist-pdf').classList.remove('print-active'); document.getElementById('reporte-pdf').classList.add('print-active');
         document.getElementById('pdfFecha').innerText = "Cierre Diario: " + new Date().toLocaleString(); document.getElementById('pdfEfe').innerText = moneda(efe); document.getElementById('pdfTra').innerText = moneda(tra); document.getElementById('pdfTotal').innerText = moneda(efe + tra);
         const resumenVentas = {}; let gananciaLibreTotal = 0; 
         tickets.forEach(tk => { tk.items.forEach(item => {
-                let n = item.n, c = item.cant || item.c || 0; 
-                if(!resumenVentas[n]) resumenVentas[n] = { cant: 0, total: 0, gananciaItem: 0 };
+                let n = item.n, c = item.cant || item.c || 0; if(!resumenVentas[n]) resumenVentas[n] = { cant: 0, total: 0, gananciaItem: 0 };
                 const pRef = prods.find(x => x.nombre === n); let costoBase = pRef ? (pRef.costo || 0) : 0; let precioBase = pRef ? pRef.precio : 0;
-                let gananciaNetaItem = c * (precioBase - costoBase);
-                resumenVentas[n].cant += c; resumenVentas[n].total += (c * precioBase); resumenVentas[n].gananciaItem += gananciaNetaItem; gananciaLibreTotal += gananciaNetaItem;
+                let gananciaNetaItem = c * (precioBase - costoBase); resumenVentas[n].cant += c; resumenVentas[n].total += (c * precioBase); resumenVentas[n].gananciaItem += gananciaNetaItem; gananciaLibreTotal += gananciaNetaItem;
         });});
         document.getElementById('pdfGananciaNeta').innerText = moneda(gananciaLibreTotal);
         const rankingSorted = Object.entries(resumenVentas).sort((a,b) => b[1].cant - a[1].cant);
         document.getElementById('pdfRankingContenido').innerHTML = rankingSorted.length > 0 ? rankingSorted.slice(0, 3).map((item, index) => `<div class="ranking-item"><span>${["🥇","🥈","🥉"][index]} <b>${item[0]}</b></span> <span>${item[1].cant} unidades vendidas</span></div>`).join('') : '<p>Sin ranking.</p>';
         document.getElementById('pdfCuerpoVentas').innerHTML = Object.entries(resumenVentas).map(([n, d]) => `<tr><td>${n}</td><td>${d.cant} u.</td><td>${moneda(d.total)}</td><td style="color:var(--primary); font-weight:bold;">+${moneda(d.gananciaItem)}</td></tr>`).join('');
-        
         showToast("Generando reporte PDF...", "success"); setTimeout(() => { window.print(); }, 800);
     }
 
-    // NUEVA FUNCIÓN: Genera e inyecta dinámicamente la planilla de conteo físico ordenando los productos por categoría
     function generarChecklistFisico() {
         if(prods.length === 0) { showToast("No hay productos en la base de datos para auditar.", "warning"); return; }
-        
-        // Switch de clases de impresión activas
-        document.getElementById('reporte-pdf').classList.remove('print-active');
-        document.getElementById('checklist-pdf').classList.add('print-active');
-
+        document.getElementById('reporte-pdf').classList.remove('print-active'); document.getElementById('checklist-pdf').classList.add('print-active');
         document.getElementById('checklistFecha').innerText = "Fecha de Emisión: " + new Date().toLocaleDateString() + " - " + new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-        
-        // Clonamos y ordenamos alfabéticamente por categoría, luego por nombre
-        const prodsOrdenados = prods.slice().sort((a, b) => {
-            const catA = a.cat || 'Otros';
-            const catB = b.cat || 'Otros';
-            if (catA !== catB) return catA.localeCompare(catB);
-            return a.nombre.localeCompare(b.nombre);
-        });
-
+        const prodsOrdenados = prods.slice().sort((a, b) => { const catA = a.cat || 'Otros'; const catB = b.cat || 'Otros'; if (catA !== catB) return catA.localeCompare(catB); return a.nombre.localeCompare(b.nombre); });
         const cuerpo = document.getElementById('checklistCuerpo');
-        cuerpo.innerHTML = prodsOrdenados.map(p => `
-            <tr>
-                <td style="font-weight: bold; color: #555;">${p.cat || 'Otros'}</td>
-                <td><strong>${p.nombre}</strong> ${p.oculto ? '<span style="font-size:0.75rem; color:gray;">(Oculto)</span>' : ''}</td>
-                <td style="text-align: center; font-weight: bold;">${p.cantidad} u.</td>
-                <td style="text-align: center;"><span class="linea-conteo"></span></td>
-                <td style="text-align: center;"><span class="linea-conteo"></span></td>
-                <td style="text-align: center;"><span class="cuadro-check"></span></td>
-            </tr>
-        `).join('');
-
-        showToast("Preparando hoja de conteo físico...", "success");
-        setTimeout(() => { window.print(); }, 800);
+        cuerpo.innerHTML = prodsOrdenados.map(p => `<tr><td>${p.cat || 'Otros'}</td><td><strong>${p.nombre}</strong> ${p.oculto ? '<span style="font-size:0.75rem; color:gray;">(Oculto)</span>' : ''}</td><td style="text-align: center; font-weight: bold;">${p.cantidad} u.</td><td style="text-align: center;"><span class="linea-conteo"></span></td><td style="text-align: center;"><span class="linea-conteo"></span></td><td style="text-align: center;"><span class="cuadro-check"></span></td></tr>`).join('');
+        showToast("Preparando hoja de conteo físico...", "success"); setTimeout(() => { window.print(); }, 800);
     }
 
+    // INTERFAZ PREMIUM: CIERRE DE CAJA DIARIA AUDITADO
     function confirmarCaja() {
-        if (efe === 0 && tra === 0) { showToast("No hay ventas registradas para cerrar.", "warning"); return; }
-        showIgnition("Cierre Diario", "¿Desea cerrar la venta diaria? La información se archivará.", "", () => {
-            const ahora = Date.now();
-            cierresHistorial.push({ fecha: new Date().toLocaleDateString(), hora: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), timestamp: ahora, efectivo: efe, transferencia: tra, total: efe + tra, numVentas: tickets.length, tickets_cierre: JSON.parse(JSON.stringify(tickets)) }); 
+        const efectivoEsperadoTotal = base_caja + efe;
+        if (efe === 0 && tra === 0 && base_caja === 0) { 
+            showToast("No hay flujo registrado para cerrar.", "warning"); 
+            return; 
+        }
+
+        const htmlFormCiegoPremium = `
+            <div style="text-align: left; font-family: 'Segoe UI', sans-serif; padding: 5px;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px; border-bottom: 2px solid var(--danger); padding-bottom: 10px;">
+                    <span style="font-size: 1.8rem;">🔒</span>
+                    <div>
+                        <h4 style="margin: 0; color: var(--dark); font-size: 1.1rem; font-weight: 800;">AUDITORÍA Y BALANCE DE CIERRE</h4>
+                        <small style="color: gray;">Ingrese los valores reales contados físicamente</small>
+                    </div>
+                </div>
+
+                <p style="font-size: 0.85rem; color: gray; margin-bottom: 15px; line-height: 1.3;">
+                    Por seguridad del negocio, este sistema aplica <b>Conteo Ciego</b>. Ingrese los saldos reales de su caja; el sistema computará los descuadres automáticamente en el historial.
+                </p>
+
+                <div style="background: rgba(46, 204, 113, 0.05); border: 1px solid rgba(46, 204, 113, 0.2); padding: 14px; border-radius: 12px; margin-bottom: 12px;">
+                    <label style="font-weight: bold; font-size: 0.85rem; color: #27ae60; display: block; margin-bottom: 6px;">
+                        💵 EFECTIVO FÍSICO TOTAL EN CAJA
+                    </label>
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <span style="position: absolute; left: 12px; font-weight: bold; color: #27ae60; font-size: 1.2rem;">$</span>
+                        <input type="number" id="cCiegoEfe" placeholder="0" style="width: 100%; padding: 12px 12px 12px 30px; border-radius: 8px; border: 2px solid #2ecc71; outline: none; font-size: 1.3rem; font-weight: bold; color: var(--text-main); text-align: right;">
+                    </div>
+                    <small style="color: gray; font-size: 0.75rem; display: block; margin-top: 4px;">Sume base de apertura + billetes + monedas físicas.</small>
+                </div>
+
+                <div style="background: rgba(155, 89, 182, 0.05); border: 1px solid rgba(155, 89, 182, 0.2); padding: 14px; border-radius: 12px; margin-bottom: 10px;">
+                    <label style="font-weight: bold; font-size: 0.85rem; color: var(--transfer); display: block; margin-bottom: 6px;">
+                        📲 TRANSFERENCIAS VERIFICADAS EN BANCO
+                    </label>
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <span style="position: absolute; left: 12px; font-weight: bold; color: var(--transfer); font-size: 1.2rem;">$</span>
+                        <input type="number" id="cCiegoTra" placeholder="0" style="width: 100%; padding: 12px 12px 12px 30px; border-radius: 8px; border: 2px solid var(--transfer); outline: none; font-size: 1.3rem; font-weight: bold; color: var(--text-main); text-align: right;">
+                    </div>
+                    <small style="color: gray; font-size: 0.75rem; display: block; margin-top: 4px;">Sume los extractos o saldos de Nequi / Daviplata / Tarjetas.</small>
+                </div>
+            </div>
+        `;
+
+        showIgnition("🔒 Cierre de Caja Auditado", "", htmlFormCiegoPremium, () => {
+            const efeReportado = parseFloat(document.getElementById('cCiegoEfe').value); const traReportado = parseFloat(document.getElementById('cCiegoTra').value);
+            if(isNaN(efeReportado) || isNaN(traReportado) || efeReportado < 0 || traReportado < 0) { showToast("Debe ingresar valores numéricos válidos.", "error"); return false; }
+            const ahora = Date.now(); const descEfe = efeReportado - efectivoEsperadoTotal; const descTra = traReportado - tra; const descTotal = descEfe + descTra;
+            cierresHistorial.push({ fecha: new Date().toLocaleDateString(), hora: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), timestamp: ahora, base_caja_apertura: base_caja, efectivo_ventas_neto: efe, efectivo_esperado_total: efectivoEsperadoTotal, transferencia_esperada: tra, total_sistema_esperado: efectivoEsperadoTotal + tra, efectivo_reportado: efeReportado, transferencia_reportado: traReportado, total_reportado: efeReportado + traReportado, descuadre_efectivo: descEfe, descuadre_transferencia: descTra, descuadre_total: descTotal, numVentas: tickets.length, tickets_cierre: JSON.parse(JSON.stringify(tickets)) }); 
             cierresHistorial = cierresHistorial.filter(c => c.timestamp >= (ahora - (365 * 24 * 60 * 60 * 1000)));
-            efe = 0; tra = 0; tickets = []; guardarDatos(); 
-            showToast("Venta diaria cerrada y guardada."); return true;
+            if(descTotal === 0) { showToast("¡Caja perfecta! El dinero físico coincide al 100%."); } else if (descTotal > 0) { showToast(`Cierre guardado. SOBRANTE de ${moneda(descTotal)}`, "warning"); } else { showToast(`Cierre guardado. FALTANTE de ${moneda(Math.abs(descTotal))}`, "error"); }
+            efe = 0; tra = 0; base_caja = 0; tickets = []; guardarDatos(); setTimeout(() => { cerrarSesion(); }, 1500); return true;
         });
+
+        const btnOk = document.getElementById('btnOk');
+        if (btnOk) {
+            btnOk.innerText = "Sellar Caja y Finalizar Turno";
+            btnOk.style.background = "var(--danger)";
+            btnOk.style.borderLeft = "1px solid #c0392b";
+        }
+
+        setTimeout(() => { document.getElementById('cCiegoEfe')?.focus(); }, 120);
     }
 
     function verTodoHistorial() {
@@ -892,123 +1015,258 @@
 
     function verHistorialCierres() {
         if (cierresHistorial.length === 0) { showIgnition("Resumen Rápido", "Sin cierres recientes.", "", () => true); return; }
-        const hHtml = cierresHistorial.slice().reverse().map(c => `<div class="cierre-card"><b>📅 ${c.fecha} - ${c.hora}</b><br><span>Efec: ${moneda(c.efectivo)} | Trans: ${moneda(c.transferencia)}</span><br><div style="text-align:right; font-weight:bold; color:var(--primary);">Total: ${moneda(c.total)}</div></div>`).join('');
-        showIgnition("Resumen Rápido", "Últimos cierres de caja:", `<div style="max-height: 40vh; overflow-y:auto; padding-right:5px;">${hHtml}</div>`, () => true);
+        const hHtml = cierresHistorial.slice().reverse().map(c => {
+            let infoDescuadre = '';
+            if(c.descuadre_total !== undefined) {
+                if(c.descuadre_total === 0) { infoDescuadre = `<span style="color:var(--primary); font-weight:bold;">✔ Caja Cuadrada Exacta</span>`; }
+                else if (c.descuadre_total > 0) { infoDescuadre = `<span style="color:var(--gold); font-weight:bold;">⚠ Sobrante: ${moneda(c.descuadre_total)}</span>`; }
+                else { infoDescuadre = `<span style="color:var(--danger); font-weight:bold;">❌ Faltante: ${moneda(Math.abs(c.descuadre_total))}</span>`; }
+            }
+            return `<div class="cierre-card"><b>📅 ${c.fecha} - ${c.hora}</b><br><small style="color:gray;">Base Apertura: ${moneda(c.base_caja_apertura || 0)}</small><br><span>Esperado: ${moneda(c.total_sistema_esperado || c.total)} | Contado: ${moneda(c.total_reportado || c.total)}</span><br><div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">${infoDescuadre} <strong style="color:var(--primary);">Esperado: ${moneda(c.total_sistema_esperado || c.total)}</strong></div></div>`;
+        }).join('');
+        showIgnition("Resumen Rápido", "Últimos cierres de caja auditados:", `<div style="max-height: 40vh; overflow-y:auto; padding-right:5px;">${hHtml}</div>`, () => true);
     }
 
     function formatLocalISO(d) { return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,'0') + "-" + String(d.getDate()).padStart(2,'0'); }
 
+    // BOTÓN SUPERIOR: CONTROL DEL CALENDARIO COMPLETO CON REPORTES INTERACTIVOS
     function abrirPanelReportes() {
-        const html = `
-        <div style="display:flex; flex-direction:column; gap:12px; text-align:left; margin-top:10px;">
-            <p style="font-size:0.85rem; color:gray; margin:0;">Elige un rango de fechas para compilar las ventas y expedir un informe gerencial PDF.</p>
-            <div style="display:flex; gap:5px;">
-                <button onclick="setFechasReporte('hoy')" style="flex:1; padding:8px; border-radius:5px; border:1px solid var(--info); background:#fff; color:var(--info); cursor:pointer;">Hoy</button>
-                <button onclick="setFechasReporte('semana')" style="flex:1; padding:8px; border-radius:5px; border:1px solid var(--info); background:#fff; color:var(--info); cursor:pointer;">Semana</button>
-                <button onclick="setFechasReporte('mes')" style="flex:1; padding:8px; border-radius:5px; border:1px solid var(--info); background:#fff; color:var(--info); cursor:pointer;">Mes</button>
-            </div>
-            <div><label style="font-size:0.9rem; font-weight:bold; color:var(--dark);">Desde:</label><input type="date" id="rIni" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; outline:none; font-family:inherit;"></div>
-            <div><label style="font-size:0.9rem; font-weight:bold; color:var(--dark);">Hasta:</label><input type="date" id="rFin" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; outline:none; font-family:inherit;"></div>
-        </div>`;
-        showIgnition("Reportes Avanzados", "", html, () => {
-            const ini = document.getElementById('rIni').value; const fin = document.getElementById('rFin').value;
-            if(!ini || !fin) { showToast("Selecciona ambas fechas.", "error"); return false; }
-            generarPDFHistorico(ini, fin); return true;
-        }); setTimeout(() => setFechasReporte('hoy'), 50);
+        const html = `<div style="display:flex; flex-direction:column; gap:12px; text-align:left; margin-top:10px;"><p style="font-size:0.85rem; color:gray; margin:0;">Elige un rango de fechas para desplegar el nuevo Dashboard Didáctico Comercial interactivo.</p><div style="display:flex; gap:5px;"><button onclick="setFechasReporte('hoy')" style="flex:1; padding:8px; border-radius:5px; border:1px solid var(--info); background:#fff; color:var(--info); cursor:pointer;">Hoy</button><button onclick="setFechasReporte('semana')" style="flex:1; padding:8px; border-radius:5px; border:1px solid var(--info); background:#fff; color:var(--info); cursor:pointer;">Semana</button><button onclick="setFechasReporte('mes')" style="flex:1; padding:8px; border-radius:5px; border:1px solid var(--info); background:#fff; color:var(--info); cursor:pointer;">Mes</button></div><div><label style="font-size:0.9rem; font-weight:bold;">Desde:</label><input type="date" id="rIni" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; outline:none; font-family:inherit;"></div><div><label style="font-size:0.9rem; font-weight:bold;">Hasta:</label><input type="date" id="rFin" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; outline:none; font-family:inherit;"></div></div>`;
+        showIgnition("Reportes Avanzados", "", html, () => { 
+            const ini = document.getElementById('rIni').value; 
+            const fin = document.getElementById('rFin').value; 
+            if(!ini || !fin) { showToast("Selecciona ambas fechas.", "error"); return false; } 
+            setTimeout(() => { generarDashboardDidacticoInteractivo(ini, fin); }, 150);
+            return true; 
+        }); 
+        setTimeout(() => setFechasReporte('hoy'), 50);
     }
 
-    function setFechasReporte(tipo) {
-        const hoy = new Date(); let ini = new Date();
-        if (tipo === 'semana') { const dia = hoy.getDay(); const diff = hoy.getDate() - dia + (dia === 0 ? -6 : 1); ini = new Date(hoy.setDate(diff)); } 
-        else if (tipo === 'mes') { ini = new Date(hoy.getFullYear(), hoy.getMonth(), 1); }
-        document.getElementById('rIni').value = formatLocalISO(ini); document.getElementById('rFin').value = formatLocalISO(new Date());
+    function setFechasReporte(tipo) { const hoy = new Date(); let ini = new Date(); if (tipo === 'semana') { const dia = hoy.getDay(); const diff = hoy.getDate() - dia + (dia === 0 ? -6 : 1); ini = new Date(hoy.setDate(diff)); } else if (tipo === 'mes') { ini = new Date(hoy.getFullYear(), hoy.getMonth(), 1); } document.getElementById('rIni').value = formatLocalISO(ini); document.getElementById('rFin').value = formatLocalISO(new Date()); }
+
+    function generarReporteHoyInteractivo() {
+        const hoyStr = formatLocalISO(new Date());
+        generarDashboardDidacticoInteractivo(hoyStr, hoyStr);
     }
 
-    function generarPDFHistorico(fIniStr, fFinStr) {
+    // EL MULTIMOTOR COMERCIAL DIDÁCTICO COMPLETO CON DESCARGA A EXCEL (.CSV)
+    function generarDashboardDidacticoInteractivo(fIniStr, fFinStr) {
         const partesIni = fIniStr.split('-'); const tIni = new Date(partesIni[0], partesIni[1]-1, partesIni[2], 0, 0, 0).getTime();
         const partesFin = fFinStr.split('-'); const tFin = new Date(partesFin[0], partesFin[1]-1, partesFin[2], 23, 59, 59).getTime();
+        
+        let totalEfe = 0, totalTra = 0, totalGral = 0, gananciaLibreTotal = 0;
+        const resumenVentas = {}; const resumenCat = { "Bebidas":0, "Paquetes":0, "Dulces":0, "Aseo":0, "Otros":0 };
 
-        let totalEfe = 0, totalTra = 0, totalGral = 0, gananciaLibreTotal = 0; const resumenVentas = {};
-        const cierresFiltrados = cierresHistorial.filter(c => { let t = c.timestamp; if(!t) { const p = c.fecha.split('/'); if(p.length === 3) t = new Date(p[2], p[1]-1, p[0], 12, 0, 0).getTime(); } return t >= tIni && t <= tFin; });
-        if(cierresFiltrados.length === 0) { showToast("No hay registros en esas fechas.", "warning"); return; }
+        const closuresFiltrados = cierresHistorial.filter(c => { 
+            let t = c.timestamp; 
+            if(!t) { const p = c.fecha.split('/'); if(p.length === 3) t = new Date(p[2], p[1]-1, p[0], 12, 0, 0).getTime(); } 
+            return t >= tIni && t <= tFin; 
+        });
 
-        // Switch de clases de impresión activas
-        document.getElementById('checklist-pdf').classList.remove('print-active');
-        document.getElementById('reporte-pdf').classList.add('print-active');
-
-        cierresFiltrados.forEach(c => {
-            totalEfe += (c.efectivo || 0); totalTra += (c.transferencia || 0); totalGral += (c.total || 0);
-            if(c.tickets_cierre) {
-                c.tickets_cierre.forEach(tk => { tk.items.forEach(item => {
+        closuresFiltrados.forEach(c => {
+            totalEfe += (c.efectivo_ventas_neto !== undefined ? c.efectivo_ventas_neto : c.efectivo || 0); 
+            totalTra += (c.transferencia_esperada || c.transferencia || 0); 
+            totalGral += (c.total_sistema_esperado || c.total || 0);
+            if(c.tickets_cierre) { 
+                c.tickets_cierre.forEach(tk => { 
+                    tk.items.forEach(item => { 
                         let n = item.n, cant = item.cant || item.c || 0; 
-                        if(!resumenVentas[n]) resumenVentas[n] = { cant: 0, total: 0, gananciaItem: 0 };
-                        const pRef = prods.find(x => x.nombre === n); let costoBase = pRef ? (pRef.costo || 0) : 0; let precioVenta = item.p || (pRef ? pRef.precio : 0);
-                        let gananciaNetaItem = cant * (precioVenta - costoBase);
-                        resumenVentas[n].cant += cant; resumenVentas[n].total += (cant * precioVenta); resumenVentas[n].gananciaItem += gananciaNetaItem; gananciaLibreTotal += gananciaNetaItem;
-                }); });
+                        if(!resumenVentas[n]) resumenVentas[n] = { cant: 0, total: 0, gananciaItem: 0 }; 
+                        const pRef = prods.find(x => x.nombre === n); 
+                        let costoBase = pRef ? (parseFloat(pRef.costo) || 0) : 0; 
+                        let precioVenta = parseFloat(item.p || (pRef ? pRef.precio : 0)); 
+                        let cat = (pRef && pRef.cat) ? pRef.cat : "Otros";
+                        
+                        let gananciaNetaItem = Math.max(0, cant * (precioVenta - costoBase)); 
+                        resumenVentas[n].cant += cant; 
+                        resumenVentas[n].total += (cant * precioVenta); 
+                        resumenVentas[n].gananciaItem += gananciaNetaItem; 
+                        gananciaLibreTotal += gananciaNetaItem;
+                        if(resumenCat[cat] !== undefined) resumenCat[cat] += (cant * precioVenta);
+                        else resumenCat["Otros"] += (cant * precioVenta);
+                    }); 
+                }); 
             }
         });
 
-        document.getElementById('pdfFecha').innerText = `Consolidado Rango: ${fIniStr} al ${fFinStr}`;
-        document.getElementById('pdfEfe').innerText = moneda(totalEfe); document.getElementById('pdfTra').innerText = moneda(totalTra); document.getElementById('pdfTotal').innerText = moneda(totalGral); document.getElementById('pdfGananciaNeta').innerText = moneda(gananciaLibreTotal);
-        const rankingSorted = Object.entries(resumenVentas).sort((a,b) => b[1].cant - a[1].cant);
-        if (rankingSorted.length > 0) {
-            document.getElementById('pdfRankingContenido').innerHTML = rankingSorted.slice(0, 3).map((item, index) => `<div class="ranking-item"><span>${["🥇","🥈","🥉"][index]} <b>${item[0]}</b></span> <span>${item[1].cant} unidades vendidas</span></div>`).join('');
-            document.getElementById('pdfCuerpoVentas').innerHTML = Object.entries(resumenVentas).map(([n, d]) => `<tr><td>${n}</td><td>${d.cant} u.</td><td>${moneda(d.total)}</td><td style="color:var(--primary); font-weight:bold;">+${moneda(d.gananciaItem)}</td></tr>`).join('');
-        } else {
-            document.getElementById('pdfRankingContenido').innerHTML = '<p style="color:gray; font-size:0.9rem; text-align:center;">Información detallada no guardada en cierres antiguos.</p>'; document.getElementById('pdfCuerpoVentas').innerHTML = '<tr><td colspan="4" style="text-align:center; color:gray;">Solo hay datos financieros.</td></tr>';
+        const hoyISO = formatLocalISO(new Date());
+        if(tFin >= new Date(hoyISO.split('-')[0], hoyISO.split('-')[1]-1, hoyISO.split('-')[2], 0, 0, 0).getTime()) {
+            totalEfe += efe; totalTra += tra; totalGral += (efe + tra);
+            tickets.forEach(tk => { 
+                if(tk.tot > 0) { // FILTRO: Solo ventas positivas
+                    tk.items.forEach(item => {
+                        let n = item.n, cant = item.cant || item.c || 0;
+                        if(!resumenVentas[n]) resumenVentas[n] = { cant: 0, total: 0, gananciaItem: 0 };
+                        const pRef = prods.find(x => x.nombre === item.n);
+                        let costoBase = pRef ? (parseFloat(pRef.costo) || 0) : 0;
+                        let precioVenta = parseFloat(item.p || (pRef ? pRef.precio : 0));
+                        let cat = (pRef && pRef.cat) ? pRef.cat : "Otros";
+                        
+                        let gananciaNetaItem = Math.max(0, cant * (precioVenta - costoBase));
+                        resumenVentas[n].cant += cant; resumenVentas[n].total += (cant * precioVenta); resumenVentas[n].gananciaItem += gananciaNetaItem; gananciaLibreTotal += gananciaNetaItem;
+                        if(resumenCat[cat] !== undefined) resumenCat[cat] += (cant * precioVenta);
+                        else resumenCat["Otros"] += (cant * precioVenta);
+                    });
+                }
+            });
         }
-        
-        showToast("Generando reporte PDF...", "success"); setTimeout(() => { window.print(); }, 800);
+
+        if(totalGral === 0) { showToast("No hay movimientos comerciales en las fechas seleccionadas.", "warning"); return; }
+
+        let pctEfe = totalGral > 0 ? Math.round((totalEfe / totalGral) * 100) : 0;
+        let pctTra = totalGral > 0 ? Math.round((totalTra / totalGral) * 100) : 0;
+        let colorMargen = gananciaLibreTotal > (totalGral * 0.18) ? "var(--primary)" : "var(--gold)";
+
+        const htmlDashboard = `
+        <div class="didactic-dash">
+            <span style="font-size:0.85rem; color:gray; display:block; margin-bottom:2px;">Rango compilado: <b>${fIniStr}</b> al <b>${fFinStr}</b></span>
+            <div class="didactic-grid">
+                <div class="didactic-dash-card didactic-card" style="border-left: 5px solid var(--primary);">
+                    <small style="color:gray; font-weight:bold; font-size:0.75rem;">💵 MOVIMIENTOS EN EFECTIVO (${pctEfe}%)</small>
+                    <span class="didactic-val" style="color:var(--primary);">${moneda(totalEfe)}</span>
+                    <div class="didactic-bar-bg"><div class="didactic-bar-fill" style="width:${pctEfe}%; background:var(--primary);"></div></div>
+                </div>
+                <div class="didactic-dash-card didactic-card" style="border-left: 5px solid var(--transfer);">
+                    <small style="color:gray; font-weight:bold; font-size:0.75rem;">📲 VENTAS POR TRANSFERENCIA (${pctTra}%)</small>
+                    <span class="didactic-val" style="color:var(--transfer);">${moneda(totalTra)}</span>
+                    <div class="didactic-bar-bg"><div class="didactic-bar-fill" style="width:${pctTra}%; background:var(--transfer);"></div></div>
+                </div>
+            </div>
+            <div class="didactic-grid">
+                <div class="didactic-dash-card didactic-card" style="border-left: 5px solid var(--info); background: rgba(52, 152, 219, 0.04);">
+                    <small style="color:gray; font-weight:bold; font-size:0.75rem;">💰 TOTAL VALOR COMERCIAL VENDIDO</small>
+                    <span class="didactic-val" style="color:var(--info);">${moneda(totalGral)}</span>
+                </div>
+                <div class="didactic-dash-card didactic-card" style="border-left: 5px solid ${colorMargen}; background: rgba(46, 204, 113, 0.04);">
+                    <small style="color:gray; font-weight:bold; font-size:0.75rem;">📈 GANANCIA LIBRE NETA ESTIMADA</small>
+                    <span class="didactic-val" style="color:${colorMargen};">${moneda(Math.max(0, gananciaLibreTotal))}</span>
+                </div>
+            </div>
+            <h4 style="margin: 5px 0 0 0; color:var(--text-main); font-size:1rem;">🗂️ Desempeño Comercial por Pasillo / Categoría</h4>
+            <div class="didactic-card" style="padding:5px 12px;">
+                <table class="didactic-table">
+                    <thead><tr style="color:gray; font-size:0.8rem;"><th>Categoría de Producto</th><th style="text-align:right;">Ingreso Producido</th></tr></thead>
+                    <tbody>${Object.entries(resumenCat).map(([c, val]) => `<tr><td><b>${c}</b></td><td style="text-align:right; font-weight:bold; color:var(--info);">${moneda(val)}</td></tr>`).join('')}</tbody>
+                </table>
+            </div>
+            <div style="margin-top:5px;">
+                <button type="button" onclick="descargarExcelFormato('${fIniStr}','${fFinStr}',${totalEfe},${totalTra},${totalGral},${gananciaLibreTotal})" style="width:100%; background: #1f7246; color:white; border:none; padding:14px; border-radius:12px; font-weight:bold; cursor:pointer; font-size:1rem;">🟢 Descargar Todo para Excel (.csv)</button>
+            </div>
+        </div>`;
+        document.getElementById('modalContainerBase').classList.add('wide-modal');
+        showIgnition("📊 PANEL COMERCIAL GERENCIAL", "", htmlDashboard, () => {
+            document.getElementById('modalContainerBase').classList.remove('wide-modal');
+            return true;
+        });
+    }
+
+    function descargarExcelFormato(ini, fin, efe, tra, tot, gan) {
+        let csv = `REPORTE DE VENTAS GERENCIAL - TIENDA JACKELINE\n`;
+        csv += `Periodo Auditado;${ini} al ${fin}\n\n`;
+        csv += `CONSOLIDADO DE DINERO EN CAJA\n`;
+        csv += `Metodo de Ingreso;Total Acumulado\n`;
+        csv += `Efectivo Comercial;${efe}\n`;
+        csv += `Transferencias Bancarias;${tra}\n`;
+        csv += `Ventas Brutas Totales;${tot}\n`;
+        csv += `Ganancias Netas Estimadas;${gan}\n\n`;
+        csv += `DETALLE DE INVENTARIO VENDIDO\n`;
+        csv += `Nombre del Articulo;Cantidad Total Vendida\n`;
+
+        const resumenArticulos = {};
+        tickets.forEach(tk => { tk.items.forEach(item => {
+            let n = item.n, c = item.cant || item.c || 0;
+            resumenArticulos[n] = (resumenArticulos[n] || 0) + c;
+        });});
+
+        Object.entries(resumenArticulos).forEach(([prod, cant]) => {
+            csv += `${prod};${cant}\n`;
+        });
+
+        const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `Cierre_Comercial_${ini}_a_${fin}.csv`;
+        link.click();
+        showToast("Archivo guardado. Ábrelo en Excel 🟩");
     }
 
     function modalSurtir(n) { 
-        showIgnition("Surtir y Activar", `¿Cuántas nuevas unidades de <b>${n}</b> vas a ingresar?`, `<input type="number" id="sC" value="10" style="width:100%; padding:15px; text-align:center; font-size:1.5rem; border-radius:10px; border:2px solid var(--info); outline:none;">`, () => { 
-            const p = prods.find(x => x.nombre === n); 
-            const unidades = parseInt(document.getElementById('sC').value); 
-            if(unidades > 0) { 
-                p.cantidad = (parseInt(p.cantidad) || 0) + unidades; 
-                p.oculto = false; 
-                guardarDatos(); 
-                showToast("Inventario actualizado y producto en circulación"); 
-                return true; 
-            } 
-            showToast("Ingresa una cantidad válida", "error");
-            return false; 
+        showIgnition("Surtir y Activar", `¿Cuántas nuevas unidades de <b>${n}</b> vas a ingresar?`, `<input type="number" id="sC" value="10" style="width:100%; padding:15px; text-align:center; font-size:1.5rem; border-radius:10px; border:2px solid var(--info); outline:none; font-weight:bold; color:var(--info);">`, () => { 
+            const p = prods.find(x => x.nombre === n); const unidades = parseInt(document.getElementById('sC').value); 
+            if(unidades > 0) { p.cantidad = (parseInt(p.cantidad) || 0) + unidades; p.oculto = false; guardarDatos(); showToast("Inventario actualizado y producto en circulación"); return true; } 
+            showToast("Ingresa una cantidad válida", "error"); return false; 
         }); 
-        setTimeout(() => { document.getElementById('sC').focus(); document.getElementById('sC').select(); }, 100); 
+        setTimeout(() => { document.getElementById('sC').focus(); document.getElementById('sC').select(); }, 120); 
     }
     
     function modalEditar(n) { 
         const p = prods.find(x => x.nombre === n); 
-        showIgnition("Editar Producto", `Modificando: <b>${n}</b>`, `
-        <div style="text-align:left; margin-top:10px;">
-            <label style="font-weight:bold;">Nombre:</label>
-            <input type="text" id="eN" autocomplete="off" value="${p.nombre}" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ccc;">
-            <div style="display:flex; gap:10px; margin-bottom:10px;">
-                <div style="flex:1;"><label style="font-weight:bold;">Categoría:</label><select id="eCat" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;"><option value="Bebidas" ${p.cat==='Bebidas'?'selected':''}>Bebidas</option><option value="Paquetes" ${p.cat==='Paquetes'?'selected':''}>Paquetes</option><option value="Dulces" ${p.cat==='Dulces'?'selected':''}>Dulces</option><option value="Aseo" ${p.cat==='Aseo'?'selected':''}>Aseo</option><option value="Otros" ${p.cat==='Otros'?'selected':''}>Otros</option></select></div>
-                <div style="flex:1;"><label style="font-weight:bold;">QR / Código:</label><input type="text" id="eQR" autocomplete="off" value="${p.qr || ''}" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;"></div>
-            </div>
-            <div style="display:flex; gap:10px; margin-bottom:10px;">
-                <div style="flex:1;"><label style="font-weight:bold;">Costo ($):</label><input type="number" id="eCosto" value="${p.costo || 0}" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;"></div>
-                <div style="flex:1;"><label style="font-weight:bold;">Venta ($):</label><input type="number" id="eP" value="${p.precio}" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;"></div>
-            </div>
-            <label style="font-weight:bold;">Stock Actual:</label>
-            <input type="number" id="eS" value="${p.cantidad}" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
-        </div>
-        `, () => { 
+        showIgnition("Editar Producto", `Modificando: <b>${n}</b>`, `<div style="text-align:left; margin-top:10px;"><label style="font-weight:bold;">Nombre:</label><input type="text" id="eN" autocomplete="off" value="${p.nombre}" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ccc;"><div style="display:flex; gap:10px; margin-bottom:10px;"><div style="flex:1;"><label style="font-weight:bold;">Categoría:</label><select id="eCat" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;"><option value="Bebidas" ${p.cat==='Bebidas'?'selected':''}>Bebidas</option><option value="Paquetes" ${p.cat==='Paquetes'?'selected':''}>Paquetes</option><option value="Dulces" ${p.cat==='Dulces'?'selected':''}>Dulces</option><option value="Aseo" ${p.cat==='Aseo'?'selected':''}>Aseo</option><option value="Otros" ${p.cat==='Otros'?'selected':''}>Otros</option></select></div><div style="flex:1;"><label style="font-weight:bold;">QR / Código:</label><input type="text" id="eQR" autocomplete="off" value="${p.qr || ''}" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;"></div></div><div style="display:flex; gap:10px; margin-bottom:10px;"><div style="flex:1;"><label style="font-weight:bold;">Costo ($):</label><input type="number" id="eCosto" value="${p.costo || 0}" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;"></div><div style="flex:1;"><label style="font-weight:bold;">Venta ($):</label><input type="number" id="eP" value="${p.precio}" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;"></div></div><label style="font-weight:bold;">Stock Actual:</label><input type="number" id="eS" value="${p.cantidad}" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;"></div>`, () => { 
             p.nombre = document.getElementById('eN').value.trim(); p.cat = document.getElementById('eCat').value; p.qr = document.getElementById('eQR').value.trim(); p.costo = parseInt(document.getElementById('eCosto').value) || 0; p.precio = parseInt(document.getElementById('eP').value) || 0; p.cantidad = parseInt(document.getElementById('eS').value) || 0; if(p.cantidad <= 0) p.oculto = true; guardarDatos(); showToast("Producto actualizado"); return true; 
         }); 
-        setTimeout(() => { document.getElementById('eQR').onkeypress = function(e) { if(e.key === 'Enter') { e.preventDefault(); document.getElementById('eCosto').focus(); } }; }, 100);
+        
+        setTimeout(() => {
+            const inputQR = document.getElementById('eQR');
+            if(inputQR) {
+                inputQR.onkeypress = function(e) {
+                    if(e.key === 'Enter') {
+                        e.preventDefault();
+                        document.getElementById('eCosto').focus();
+                    }
+                };
+            }
+        }, 120);
     }
 
     function cambiarEstado(n, o) { const p = prods.find(x => x.nombre === n); if(p) { p.oculto = o; guardarDatos(); showToast(o ? `Producto ocultado` : `Producto visible`); } }
     function vaciarCarrito() { carrito = []; refrescarCarritoUI(); }
-    function exportarDatos() { const blob = new Blob([JSON.stringify({ prods, efe, tra, tickets, fiados, cierresHistorial })], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Backup_Jackeline_${new Date().toLocaleDateString().replace(/\//g, '-')}.json`; a.click(); showToast("Copia de seguridad descargada"); }
-    function procesarImportacion(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const data = JSON.parse(e.target.result); if (data.prods) { prods = data.prods; efe = data.efe || 0; tra = data.tra || 0; tickets = data.tickets || []; fiados = data.fiados || []; cierresHistorial = data.cierresHistorial || []; guardarDatos(); showToast("Restauración completada con éxito"); } } catch (err) { showToast("Error al leer el archivo de backup", "error"); } }; reader.readAsText(file); }
+    function exportarDatos() { const blob = new Blob([JSON.stringify({ prods, efe, tra, base_caja, tickets, fiados, cierresHistorial })], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Backup_Jackeline_${new Date().toLocaleDateString().replace(/\//g, '-')}.json`; a.click(); showToast("Copia de seguridad descargada"); }
+    function procesarImportacion(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const data = JSON.parse(e.target.result); if (data.prods) { prods = data.prods; efe = data.efe || 0; tra = data.tra || 0; base_caja = data.base_caja || 0; tickets = data.tickets || []; fiados = data.fiados || []; cierresHistorial = data.cierresHistorial || []; guardarDatos(); showToast("Restauración completada con éxito"); } } catch (err) { showToast("Error al leer el archivo de backup", "error"); } }; reader.readAsText(file); }
     function showIgnition(tit, msg, html, cb) { document.getElementById('mContent').innerHTML = `<h3>${tit}</h3>${msg ? `<p>${msg}</p>` : ''}${html}`; document.getElementById('mFooter').innerHTML = `<button class="btn-m" onclick="closeAlert()">Cerrar</button><button class="btn-m btn-m-ok" id="btnOk">Confirmar</button>`; document.getElementById('ignModal').style.display = 'flex'; document.getElementById('btnOk').onclick = () => { if(cb()) { closeAlert(); enfocarBuscador(); } }; }
     function closeAlert() { document.getElementById('ignModal').style.display = 'none'; enfocarBuscador(); }
-    
+
+    // ==========================================================
+    // RELOJ GERENCIAL: CIERRE OBLIGATORIO Y CORTE DE PERIODO
+    // ==========================================================
+    let alertaLanzadaHoy = false; 
+
+    function verificarHoraCierreAutomatico() {
+        const ahora = new Date();
+        const horas = ahora.getHours();
+        const minutos = ahora.getMinutes();
+
+        if (horas === 0 && minutos === 0) {
+            alertaLanzadaHoy = false;
+        }
+
+        // 1. AVISO PREVENTIVO: 11:45 PM
+        if (horas === 19 && minutos === 14 && !alertaLanzadaHoy) {
+            if (rolActual && (efe > 0 || tra > 0)) {
+                alertaLanzadaHoy = true;
+                showIgnition("⏰ ¡ALERTA: CIERRE INMINENTE!", "El sistema se bloqueará en 15 minutos para corte de periodo.", `<div style="text-align:center; padding:10px;"><p>Si no realizas el cierre, el sistema impedirá nuevas ventas para proteger la integridad de los reportes.</p></div>`, () => true);
+            }
+        }
+
+        // 2. CIERRE OBLIGATORIO Y BLOQUEO: 11:59 PM
+        if (horas === 23 && minutos >= 59) {
+            if (rolActual && (efe > 0 || tra > 0)) {
+                // Forzamos el cierre si no se ha hecho
+                const modalAbierto = document.getElementById('ignModal').style.display === 'flex';
+                const esModalCierre = document.getElementById('mContent')?.innerHTML.includes("AUDITORÍA Y BALANCE DE CIERRE");
+
+                if (!modalAbierto || !esModalCierre) {
+                    showToast("⚠️ CORTE DE PERIODO OBLIGATORIO", "error");
+                    confirmarCaja(); 
+                }
+                
+                // OCULTAR BOTONES DE VENTA PARA EVITAR REGISTROS FUERA DE FECHA
+                document.getElementById('btnFinalizar').disabled = true;
+                document.getElementById('btnFinalizar').innerText = "PERIODO CERRADO - BLOQUEADO";
+            }
+        }
+    }
+
+    setInterval(verificarHoraCierreAutomatico, 30000);
 </script>
 </body>
 </html>
