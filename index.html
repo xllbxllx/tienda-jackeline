@@ -575,8 +575,9 @@
         prods.forEach(p => { if(!p.oculto) { bodVal += (p.precio * p.cantidad); invVal += ((p.costo || 0) * p.cantidad); } });
 
         let totalVentasHistorial = 0;
+        // Sumamos única y exclusivamente los tickets con ingresos reales (pagados)
         tickets.forEach(tk => { if(tk.tot > 0) totalVentasHistorial += tk.tot; });
-        totalVentasHistorial += totalFiados;
+        // Se elimina la suma de totalFiados para que "Total Ventas" sea 100% liquidez real
 
         // PROTECCIÓN CONTRA NEGATIVOS EN LOS APARTADOS DE CAJA
         document.getElementById('dEfe').innerText = moneda(Math.max(0, base_caja + efe)); 
@@ -655,11 +656,31 @@
 
     function abrirVentaCant(n) {
         const p = prods.find(x => x.nombre === n);
-        showIgnition("Añadir a Bolsa", `¿Cuántas unidades de "${n}"?`, `<input type="number" id="vCant" value="1" min="1" max="${p.cantidad}" style="width:100%; padding:15px; font-size:1.5rem; text-align:center; border-radius:10px; border: 2px solid var(--primary); outline: none;">`, () => {
-            const cant = parseInt(document.getElementById('vCant').value);
-            if (cant > 0 && cant <= p.cantidad) { const yaEn = carrito.find(x => x.n === n); if (yaEn) yaEn.cant += cant; else carrito.push({ n: p.nombre, p: p.precio, cant: cant }); refrescarCarritoUI(); return true; } return false;
-        });
-        setTimeout(() => { document.getElementById('vCant').focus(); document.getElementById('vCant').select(); }, 100);
+        
+        // Verificamos si hay stock disponible en la tienda
+        if (!p || p.cantidad <= 0) {
+            showToast("Producto sin stock.", "error");
+            return;
+        }
+
+        const yaEn = carrito.find(x => x.n === n);
+        
+        if (yaEn) {
+            // Si ya está en la bolsa, le sumamos 1 verificando que no pase el límite del inventario
+            if (yaEn.cant < p.cantidad) {
+                yaEn.cant += 1;
+                // showToast("Añadido", "success"); // (Opcional, puedes quitar las // si quieres que salga un mensajito verde al añadir)
+            } else {
+                showToast("Límite de stock alcanzado.", "warning");
+            }
+        } else {
+            // Si no está en la bolsa, lo metemos con cantidad 1
+            carrito.push({ n: p.nombre, p: p.precio, cant: 1 });
+            // showToast("Añadido", "success");
+        }
+        
+        // Refrescamos la vista de la bolsa para que se vea el cambio inmediatamente
+        refrescarCarritoUI();
     }
 
     function cambiarCantCarrito(n, delta) {
@@ -781,22 +802,77 @@
         </div>
 
         <input type="text" id="vCliente" autocomplete="off" placeholder="Nombre completo del cliente" style="display:none; width:100%; margin-top:10px; padding:15px; border-radius:10px; font-size:1rem; border:2px solid var(--info); outline:none;">
+        <div id="alertaFiadoVisual" style="display:none;"></div>
         `, () => {
             const m = document.getElementById('vPago').value; 
+            
+            // --- FUNCIÓN CENTRALIZADA PARA CERRAR LA VENTA Y GUARDAR ---
+            const finalizarTransaccion = (esMismaPersona, clienteExistente) => {
+                if (m === "F") {
+                    const nom = document.getElementById('vCliente').value.trim();
+                    if (esMismaPersona && clienteExistente) {
+                        clienteExistente.tot += total;
+                        if (!clienteExistente.items) clienteExistente.items = [];
+                        clienteExistente.items.push(...carrito);
+                        showToast(`Se sumó a la deuda. Saldo actual: ${moneda(clienteExistente.tot)}`);
+                    } else {
+                        const nuevoFiado = { id: Date.now(), fecha: new Date().toLocaleDateString(), cliente: nom, tot: total, items: [...carrito] };
+                        fiados.push(nuevoFiado);
+                        showToast(`Se fió a ${nom} por ${moneda(total)}`);
+                    }
+                } else {
+                    const mTxt = m === "E" ? "Efec." : "Transf.";
+                    if (m === "E") efe += total; else tra += total;
+                    tickets.push({ id: tickets.length + 1, h: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), m: mTxt, tot: total, items: [...carrito] });
+                    showToast(`Venta exitosa en ${mTxt}`);
+                }
+                
+                // Limpiamos carrito y guardamos en Firebase
+                carrito.forEach(item => { const p = prods.find(x => x.nombre === item.n); p.cantidad -= item.cant; if(p.cantidad <= 0) p.oculto = true; });
+                carrito = []; 
+                guardarDatos(); 
+                
+                // Forzamos el cierre del modal principal
+                const modal = document.getElementById('ignModal');
+                if(modal) modal.style.display = 'none';
+                refrescarUI();
+            };
+
             if (m === "F") {
                 const nom = document.getElementById('vCliente').value.trim();
                 if(!nom) { showToast("Debe escribir el nombre para fiar.", "error"); return false; }
-                const nuevoFiado = { id: Date.now(), fecha: new Date().toLocaleDateString(), cliente: nom, tot: total, items: [...carrito] };
-                fiados.push(nuevoFiado);
-                showToast(`Se fió a ${nom} por ${moneda(total)}`);
+                
+                // Buscamos si existe
+                let clienteExistente = fiados.find(f => f.cliente.toLowerCase() === nom.toLowerCase());
+                
+                if (clienteExistente) {
+                    // MOSTRAMOS LA ALERTA VISUAL INTEGRADA (ADIÓS VENTANA DE GOOGLE)
+                    const cajaAlerta = document.getElementById('alertaFiadoVisual');
+                    cajaAlerta.style.display = "block";
+                    
+                    // Exponemos la función al botón visual
+                    window.confirmarFiadoInterno = () => { finalizarTransaccion(true, clienteExistente); };
+
+                    cajaAlerta.innerHTML = `
+                        <div style="background: rgba(241, 196, 15, 0.1); border-left: 5px solid var(--warning); padding: 15px; border-radius: 8px; margin-top: 15px; text-align:center;">
+                            <p style="margin:0 0 10px 0; color:var(--dark); font-size:1rem;">⚠️ Ya existe <b>${clienteExistente.cliente}</b> con una deuda de <b>${moneda(clienteExistente.tot)}</b>.</p>
+                            <p style="margin:0 0 15px 0; color:var(--dark); font-weight:bold;">¿Es la misma persona?</p>
+                            <div style="display:flex; gap:10px; justify-content:center;">
+                                <button type="button" onclick="document.getElementById('alertaFiadoVisual').style.display='none'; showToast('Agrega un apellido', 'warning'); document.getElementById('vCliente').focus();" style="background:var(--gray); color:white; border:none; padding:10px 15px; border-radius:8px; font-weight:bold; cursor:pointer; width:50%;">❌ NO, es otro</button>
+                                
+                                <button type="button" onclick="window.confirmarFiadoInterno()" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:8px; font-weight:bold; cursor:pointer; width:50%;">✅ SÍ, sumar deuda</button>
+                            </div>
+                        </div>
+                    `;
+                    return false; // Frenamos el modal para que no se cierre y espere el click
+                } else {
+                    finalizarTransaccion(false, null);
+                    return true;
+                }
             } else {
-                const mTxt = m === "E" ? "Efec." : "Transf.";
-                if (m === "E") efe += total; else tra += total;
-                tickets.push({ id: tickets.length + 1, h: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), m: mTxt, tot: total, items: [...carrito] });
-                showToast(`Venta exitosa en ${mTxt}`);
+                finalizarTransaccion(false, null);
+                return true;
             }
-            carrito.forEach(item => { const p = prods.find(x => x.nombre === item.n); p.cantidad -= item.cant; if(p.cantidad <= 0) p.oculto = true; });
-            carrito = []; guardarDatos(); return true;
         });
         
         setTimeout(() => { const vR = document.getElementById('vRecibido'); if(vR) vR.focus(); }, 100);
