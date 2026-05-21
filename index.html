@@ -407,17 +407,45 @@
             document.getElementById('loginModal').style.display = 'flex';
         } else {
             document.getElementById('loginModal').style.display = 'none';
+            
+            // --- CORRECCIÓN: Verificar si ya se abrió el turno hoy ---
+            const turnoAbierto = localStorage.getItem("turno_abierto_hoy");
+
             if(rolActual === 'cajero') document.body.classList.add('rol-cajero');
             else document.body.classList.remove('rol-cajero');
-            
-            setTimeout(() => {
-                if(efe === 0 && tra === 0 && base_caja === 0 && tickets.length === 0) {
-                    abrirModalBaseCaja();
-                } else {
-                    enfocarBuscador();
-                }
-            }, 600); 
+
+            // Solo pedimos base si el turno NO se ha abierto y la caja está en 0
+            if(!turnoAbierto && efe === 0 && tra === 0 && base_caja === 0 && tickets.length === 0) {
+                document.getElementById('modalApertura').style.display = 'flex';
+                document.getElementById('inputBaseApertura').focus();
+            } else {
+                // Si ya está abierto, simplemente entra a la tienda
+                setTimeout(() => { if (typeof enfocarBuscador === 'function') enfocarBuscador(); }, 600);
+            }
         }
+    }
+
+    function confirmarAperturaDesdeModal() {
+        const val = document.getElementById('inputBaseApertura').value;
+        if(val === "" || val < 0) {
+            showToast("Debes ingresar un valor válido", "error");
+            return;
+        }
+        base_caja = parseFloat(val);
+        
+        // GUARDAMOS LA MARCA DE QUE EL DÍA YA SE INICIÓ
+        localStorage.setItem("turno_abierto_hoy", "true");
+        
+        guardarDatos(); 
+        document.getElementById('modalApertura').style.display = 'none';
+        showToast(`Caja iniciada con ${moneda(base_caja)}`, "success");
+        enfocarBuscador();
+    }
+
+    function cancelarApertura() {
+        document.getElementById('modalApertura').style.display = 'none';
+        showToast("Acceso denegado: Se requiere base inicial", "error");
+        cerrarSesion(); // ESTO ES LA CLAVE: Saca al usuario del sistema
     }
 
     function abrirModalBaseCaja() {
@@ -482,14 +510,44 @@
     
     function iniciarSesion(rol) {
         if(rol === 'admin') {
-            const pin = prompt("Ingrese PIN de Administrador (1234):");
-            if(pin !== "1234") { showToast("PIN Incorrecto", "error"); return; }
+            // Mostramos nuestro nuevo panel estilizado
+            const modal = document.getElementById('modalAdminPin');
+            modal.style.display = 'flex';
+            document.getElementById('inputAdminPin').focus();
+        } else {
+            // Cajero entra directo
+            rolActual = rol; 
+            localStorage.setItem("ign_rol", rol); 
+            checkRol();
+            showToast("Bienvenido, Cajero");
         }
-        rolActual = rol; localStorage.setItem("ign_rol", rol); checkRol();
-        showToast(`Bienvenido, ${rol === 'admin' ? 'Administrador' : 'Cajero'}`);
+    }
+
+    function verificarPinAdmin() {
+        const input = document.getElementById('inputAdminPin');
+        const pin = input.value;
+        
+        if(pin === "1234") {
+            document.getElementById('modalAdminPin').style.display = 'none';
+            input.value = ""; // Limpiar
+            
+            rolActual = 'admin';
+            localStorage.setItem("ign_rol", 'admin');
+            checkRol();
+            showToast("Bienvenido, Administrador");
+        } else {
+            showToast("PIN Incorrecto", "error");
+            input.value = "";
+            input.focus();
+        }
     }
     
-    function cerrarSesion() { rolActual = null; localStorage.removeItem("ign_rol"); checkRol(); showToast("Sesión cerrada"); }
+    function cerrarSesion() { 
+        rolActual = null; 
+        localStorage.removeItem("ign_rol"); 
+        checkRol(); 
+        showToast("Sesión cerrada"); 
+    }
     checkRol(); 
 
     db.collection("tienda").doc("estado_actual").onSnapshot((doc) => {
@@ -1065,13 +1123,61 @@
         `;
 
         showIgnition("🔒 Cierre de Caja Auditado", "", htmlFormCiegoPremium, () => {
-            const efeReportado = parseFloat(document.getElementById('cCiegoEfe').value); const traReportado = parseFloat(document.getElementById('cCiegoTra').value);
-            if(isNaN(efeReportado) || isNaN(traReportado) || efeReportado < 0 || traReportado < 0) { showToast("Debe ingresar valores numéricos válidos.", "error"); return false; }
-            const ahora = Date.now(); const descEfe = efeReportado - efectivoEsperadoTotal; const descTra = traReportado - tra; const descTotal = descEfe + descTra;
-            cierresHistorial.push({ fecha: new Date().toLocaleDateString(), hora: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), timestamp: ahora, base_caja_apertura: base_caja, efectivo_ventas_neto: efe, efectivo_esperado_total: efectivoEsperadoTotal, transferencia_esperada: tra, total_sistema_esperado: efectivoEsperadoTotal + tra, efectivo_reportado: efeReportado, transferencia_reportado: traReportado, total_reportado: efeReportado + traReportado, descuadre_efectivo: descEfe, descuadre_transferencia: descTra, descuadre_total: descTotal, numVentas: tickets.length, tickets_cierre: JSON.parse(JSON.stringify(tickets)) }); 
+            const efeReportado = parseFloat(document.getElementById('cCiegoEfe').value); 
+            const traReportado = parseFloat(document.getElementById('cCiegoTra').value);
+            
+            if(isNaN(efeReportado) || isNaN(traReportado) || efeReportado < 0 || traReportado < 0) { 
+                showToast("Debe ingresar valores numéricos válidos.", "error"); 
+                return false; 
+            }
+            
+            const ahora = Date.now(); 
+            const descEfe = efeReportado - efectivoEsperadoTotal; 
+            const descTra = traReportado - tra; 
+            const descTotal = descEfe + descTra;
+            
+            cierresHistorial.push({ 
+                fecha: new Date().toLocaleDateString(), 
+                hora: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), 
+                timestamp: ahora, 
+                base_caja_apertura: base_caja, 
+                efectivo_ventas_neto: efe, 
+                efectivo_esperado_total: efectivoEsperadoTotal, 
+                transferencia_esperada: tra, 
+                total_sistema_esperado: efectivoEsperadoTotal + tra, 
+                efectivo_reportado: efeReportado, 
+                transferencia_reportado: traReportado, 
+                total_reportado: efeReportado + traReportado, 
+                descuadre_efectivo: descEfe, 
+                descuadre_transferencia: descTra, 
+                descuadre_total: descTotal, 
+                numVentas: tickets.length, 
+                tickets_cierre: JSON.parse(JSON.stringify(tickets)) 
+            }); 
+            
             cierresHistorial = cierresHistorial.filter(c => c.timestamp >= (ahora - (365 * 24 * 60 * 60 * 1000)));
-            if(descTotal === 0) { showToast("¡Caja perfecta! El dinero físico coincide al 100%."); } else if (descTotal > 0) { showToast(`Cierre guardado. SOBRANTE de ${moneda(descTotal)}`, "warning"); } else { showToast(`Cierre guardado. FALTANTE de ${moneda(Math.abs(descTotal))}`, "error"); }
-            efe = 0; tra = 0; base_caja = 0; tickets = []; guardarDatos(); setTimeout(() => { cerrarSesion(); }, 1500); return true;
+            
+            if(descTotal === 0) { 
+                showToast("¡Caja perfecta! El dinero físico coincide al 100%."); 
+            } else if (descTotal > 0) { 
+                showToast(`Cierre guardado. SOBRANTE de ${moneda(descTotal)}`, "warning"); 
+            } else { 
+                showToast(`Cierre guardado. FALTANTE de ${moneda(Math.abs(descTotal))}`, "error"); 
+            }
+            
+            // RESET TOTAL
+            efe = 0; tra = 0; base_caja = 0; tickets = []; 
+            
+            // ELIMINAMOS LA MARCA DE APERTURA PARA QUE MAÑANA LA VUELVA A PEDIR
+            localStorage.removeItem("turno_abierto_hoy");
+            
+            guardarDatos(); 
+            
+            setTimeout(() => { 
+                cerrarSesion(); 
+            }, 1500); 
+            
+            return true;
         });
 
         const btnOk = document.getElementById('btnOk');
@@ -1344,5 +1450,35 @@
 
     setInterval(verificarHoraCierreAutomatico, 30000);
 </script>
+
+<div id="modalAdminPin" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; justify-content:center; align-items:center; pointer-events:all;">
+    <div style="background:var(--bg-card); padding:30px; border-radius:20px; width:90%; max-width:350px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
+        <h2 style="color:var(--gold); margin-bottom:10px; font-weight:800;">Acceso Administrador👑 </h2>
+        <p style="color:var(--text-main); opacity:0.8; margin-bottom:20px;">Por favor, ingrese el PIN de seguridad para continuar:</p>
+        
+        <input type="password" id="inputAdminPin" placeholder="****" maxlength="4" 
+       onkeypress="if(event.key === 'Enter') verificarPinAdmin()" 
+       style="width:100%; padding:15px; margin-bottom:20px; border:2px solid var(--border-input); border-radius:10px; font-size:1.8rem; text-align:center; letter-spacing: 15px; background:transparent; color:var(--text-main); outline:none;">
+        
+        <button onclick="verificarPinAdmin()" 
+                style="width:100%; padding:15px; background:var(--gold); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer; font-size:1rem; transition:0.3s;">
+            VALIDAR ACCESO
+        </button>
+        
+        <button onclick="document.getElementById('modalAdminPin').style.display='none'" 
+                style="width:100%; padding:10px; margin-top:10px; background:transparent; color:var(--gray); border:none; cursor:pointer; font-size:0.9rem;">
+            Cancelar
+        </button>
+    </div>
+</div>
+<div id="modalApertura" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; justify-content:center; align-items:center; pointer-events:all;">
+    <div style="background:var(--bg-card); padding:30px; border-radius:20px; width:90%; max-width:400px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.3);">
+        <h2 style="color:var(--primary); margin-bottom:10px;">💰 Apertura de Turno</h2>
+        <p style="color:var(--text-main);">Ingresa la base inicial de efectivo para hoy:</p>
+        <input type="number" id="inputBaseApertura" placeholder="$ 0" style="width:100%; padding:15px; margin:20px 0; border:2px solid var(--border-input); border-radius:10px; font-size:1.2rem; box-sizing:border-box;">
+        <button onclick="confirmarAperturaDesdeModal()" style="width:100%; padding:15px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; font-size:1rem; cursor:pointer;">CONFIRMAR APERTURA</button>
+        <button onclick="cancelarApertura()" style="width:100%; padding:10px; margin-top:10px; background:transparent; color:var(--danger); border:1px solid var(--danger); border-radius:10px; cursor:pointer;">CANCELAR Y SALIR</button>
+    </div>
+</div>
 </body>
 </html>
