@@ -426,19 +426,24 @@
     }
 
     function confirmarAperturaDesdeModal() {
-        const val = document.getElementById('inputBaseApertura').value;
-        if(val === "" || val < 0) {
-            showToast("Debes ingresar un valor válido", "error");
-            return;
+        const input = document.getElementById('inputBaseApertura');
+        const val = parseFloat(input.value);
+
+        // --- VALIDACIÓN ESTRICTA ---
+        // Si el valor es menor o igual a 0, bloqueamos el acceso
+        if (isNaN(val) || val <= 0) {
+            showToast("¡Error! Debes ingresar una base mayor a $0 para iniciar el turno.", "error");
+            input.focus(); // Mantenemos el foco en el input
+            return; // No hacemos nada más, no se cierra el modal
         }
-        base_caja = parseFloat(val);
-        
-        // GUARDAMOS LA MARCA DE QUE EL DÍA YA SE INICIÓ
+
+        // Si el valor es correcto, procedemos
+        base_caja = val;
         localStorage.setItem("turno_abierto_hoy", "true");
-        
         guardarDatos(); 
+        
         document.getElementById('modalApertura').style.display = 'none';
-        showToast(`Caja iniciada con ${moneda(base_caja)}`, "success");
+        showToast(`Caja iniciada exitosamente con: ${moneda(base_caja)}`, "success");
         enfocarBuscador();
     }
 
@@ -510,10 +515,11 @@
     
     function iniciarSesion(rol) {
         if(rol === 'admin') {
-            // Mostramos nuestro nuevo panel estilizado
             const modal = document.getElementById('modalAdminPin');
             modal.style.display = 'flex';
-            document.getElementById('inputAdminPin').focus();
+            // Esto pone el cursor parpadeando en el input automáticamente
+            const input = document.getElementById('inputAdminPin');
+            input.focus();
         } else {
             // Cajero entra directo
             rolActual = rol; 
