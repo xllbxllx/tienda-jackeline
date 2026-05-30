@@ -370,11 +370,11 @@
 
     const moneda = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n || 0);
 
-    function toggleDarkMode() {
-        document.body.classList.toggle("dark-mode");
-        localStorage.setItem("ign_dark_mode", document.body.classList.contains("dark-mode"));
-        showToast(document.body.classList.contains("dark-mode") ? "Modo Oscuro activado 🌙" : "Modo Claro activado ☀️");
-    }
+    // function toggleDarkMode() {
+    //     document.body.classList.toggle("dark-mode");
+    //     localStorage.setItem("ign_dark_mode", document.body.classList.contains("dark-mode"));
+    //     showToast(document.body.classList.contains("dark-mode") ? "Modo Oscuro activado 🌙" : "Modo Claro activado ☀️");
+    // }
 
     function showToast(msg, type = "success") {
         const container = document.getElementById("toast-container");
