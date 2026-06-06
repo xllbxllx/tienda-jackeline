@@ -977,20 +977,44 @@
     }
 
     // LISTAR FIADOS CORREGIDO AL 100%
-    function verFiados() {
-        if(fiados.length === 0) { showIgnition("Cuentas por Cobrar", "¡Todo al día! No hay fiados activos.", "", () => true); return; }
-        let html = fiados.map(f => `
-            <div class="cierre-card" style="display:flex; justify-content:space-between; align-items:center; border-left-color:#e67e22; margin-bottom:10px;">
-                <div style="text-align:left; max-width:65%;">
-                    <b style="font-size:1.1rem; color:var(--text-main);">👤 ${f.cliente}</b><br>
-                    <small style="color:gray;">📅 ${f.fecha} - ${f.items.length} producto(s)</small><br>
-                    <strong style="color:var(--danger); font-size:1.1rem;">${moneda(f.tot)}</strong>
-                </div>
-                <button onclick="pagarFiado(${f.id})" style="background:var(--info); color:white; border:none; padding:10px 15px; border-radius:8px; cursor:pointer; font-weight:bold; transition: filter 0.2s;">Cobrar</button>
-            </div>`).join('');
-        showIgnition("Cuentas por Cobrar (Fiados)", "Lista de saldos pendientes:", `<div style="max-height: 45vh; overflow-y:auto; padding-right:5px;">${html}</div>`, () => true);
-    }
+   function verFiados() {
+        if(fiados.length === 0) { 
+            showIgnition("Cuentas por Cobrar", "¡Todo al día! No hay fiados activos.", "", () => true); 
+            return; 
+        }
 
+        // Mapeamos los fiados para mostrar la estructura de historial
+        let html = fiados.map(f => {
+            // Obtenemos los items, asegurando que si es un fiado antiguo tenga un fallback
+            let items = f.items || [];
+            
+            // Aquí construimos el detalle por fecha
+            // Si f.items es un array de objetos producto, los listamos:
+            let detalle = items.map(i => `
+                <div style="font-size: 0.85rem; padding: 2px 0; color: #555;">
+                    • ${i.n} <b>(x${i.cant})</b>: ${moneda(i.p * i.cant)}
+                </div>`).join('');
+
+            return `
+                <div class="cierre-card" style="border-left-color:#e67e22; margin-bottom:15px; padding:12px; background:#fff; border-radius:8px; border:1px solid #eee;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <b style="font-size:1.1rem; color:var(--text-main);">👤 ${f.cliente}</b>
+                        <strong style="color:var(--danger); font-size:1.1rem;">${moneda(f.tot)}</strong>
+                    </div>
+                    
+                    <div style="margin-bottom:10px; padding:5px; background:#fdf2e9; border-radius:4px;">
+                        <small style="color:#d35400; font-weight:bold;">📅 Fecha del movimiento: ${f.fecha || 'Sin fecha'}</small>
+                        <div style="margin-top:5px;">${detalle}</div>
+                    </div>
+
+                    <button onclick="pagarFiado(${f.id})" style="width:100%; background:var(--info); color:white; border:none; padding:10px; border-radius:8px; cursor:pointer; font-weight:bold;">
+                        Cobrar
+                    </button>
+                </div>`;
+        }).join('');
+
+        showIgnition("Cuentas por Cobrar (Fiados)", "Historial detallado por fecha:", `<div style="max-height: 45vh; overflow-y:auto; padding-right:5px;">${html}</div>`, () => true);
+    }
     function pagarFiado(id) {
         const idx = fiados.findIndex(x => x.id === id);
         if(idx > -1) {
